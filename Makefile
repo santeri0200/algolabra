@@ -24,8 +24,7 @@ test: $(TEST_BIN)
 
 coverage: clean
 	$(MAKE) test
-	lcov --directory . --capture --output-file coverage.info
-	lcov --remove coverage.info '/usr/*' '*/third_party/*' '*/vendor/*' '*/tests/*' --output-file coverage.info
+	lcov --directory . --capture --output-file coverage.info --ignore-errors inconsistent
 	genhtml coverage.info --output-directory coverage_html
 
 clean:
