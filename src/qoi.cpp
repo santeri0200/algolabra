@@ -55,7 +55,7 @@ union ColorData {
   uint32_t data;
 };
 
-int decode(int argc, char const* argv[]) {
+int encode(int argc, char const* argv[]) {
   uint8_t raw_headers[14] = {};
   uint32_t colors[64] = {};
   ColorData current_color = {.data = 0x000000FF}; // Current color is defined to start with rgb of 0 and alpha of 1.
