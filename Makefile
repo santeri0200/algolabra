@@ -24,7 +24,7 @@ test: $(TEST_BIN)
 
 coverage: clean
 	$(MAKE) test
-	lcov --directory . --capture --output-file coverage.info --ignore-errors inconsistent mismatch
+	lcov --directory . --capture --output-file coverage.info --ignore-errors inconsistent,mismatch
 	genhtml coverage.info --output-directory coverage_html
 
 clean:
