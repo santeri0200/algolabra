@@ -2,7 +2,7 @@ CPPFLAGS = -std=c++17
 WARNINGS = -Wall -Wextra -Wshadow -pedantic
 OPTIMISE = -Ofast -march=native -DNDEBUG
 
-TESTINGFLAGS  = -Ithird_party/googletest/googletest/include -pthread
+TESTINGFLAGS  = -Ivendor/googletest/googletest/include -pthread
 COVERAGEFLAGS = -O0 -g --coverage
 GTEST_LIB_DIR = vendor/googletest/build/lib
 GTEST_LIBS    = -L$(GTEST_LIB_DIR) -lgtest -lgtest_main
