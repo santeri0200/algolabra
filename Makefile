@@ -22,10 +22,16 @@ $(TEST_BIN): $(TESTS)
 test: $(TEST_BIN)
 	./$(TEST_BIN)
 
-coverage: test
+coverage: clean
+	$(MAKE) test
 	lcov --directory . --capture --output-file coverage.info
 	lcov --remove coverage.info '/usr/*' '*/third_party/*' '*/vendor/*' '*/tests/*' --output-file coverage.info
 	genhtml coverage.info --output-directory coverage_html
 
 clean:
 	rm -f out/main $(TEST_BIN)
+	rm -f *.gcno *.gcda *.gcov
+	rm -f src/*.gcno src/*.gcda src/*.gcov
+	rm -f tests/*.gcno tests/*.gcda tests/*.gcov
+	rm -f coverage.info
+	rm -rf coverage_html
