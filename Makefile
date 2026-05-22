@@ -1,6 +1,5 @@
 CPPFLAGS = -std=c++17
 WARNINGS = -Wall -Wextra -Wshadow -pedantic
-OPTIMISE = -Ofast -march=native -DNDEBUG
 
 TESTINGFLAGS  = -Ivendor/googletest/googletest/include -pthread
 COVERAGEFLAGS = -O0 -g --coverage
@@ -10,10 +9,8 @@ TESTS         = tests/qoi.cpp
 TEST_BIN      = out/test
 
 main:
-	g++ $(CPPFLAGS) $(OPTIMISE) -o out/main src/main.cpp
-
-debug:
-	g++ $(CPPFLAGS) $(WARNINGS) -g -o out/main src/main.cpp
+	mkdir -p out
+	g++ $(CPPFLAGS) -o out/main src/main.cpp
 
 $(TEST_BIN): $(TESTS)
 	mkdir -p out
@@ -24,7 +21,8 @@ test: $(TEST_BIN)
 
 coverage: clean
 	$(MAKE) test
-	lcov --directory . --capture --output-file coverage.info --ignore-errors inconsistent,mismatch
+	lcov --directory . --capture --output-file coverage.info --ignore-errors inconsistent,mismatch,gcov
+	lcov --remove coverage.info 'tests/*' '/usr/*' --output-file coverage.info
 	genhtml coverage.info --output-directory coverage_html
 
 clean:
