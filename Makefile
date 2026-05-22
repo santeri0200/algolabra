@@ -1,4 +1,4 @@
-CPPFLAGS = -std=c++17
+CPPFLAGS = -std=c++20
 WARNINGS = -Wall -Wextra -Wshadow -pedantic
 
 TESTINGFLAGS  = -Ivendor/googletest/googletest/include -pthread
@@ -22,7 +22,7 @@ test: $(TEST_BIN)
 coverage: clean
 	$(MAKE) test
 	lcov --directory . --capture --output-file coverage.info --ignore-errors inconsistent,mismatch,gcov
-	lcov --remove coverage.info 'tests/*' '/usr/*' --output-file coverage.info
+	lcov --remove coverage.info 'tests/*' 'gtest/*' '/usr/*' --output-file coverage.info
 	genhtml coverage.info --output-directory coverage_html
 
 clean:

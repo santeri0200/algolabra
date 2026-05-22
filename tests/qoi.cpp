@@ -1,11 +1,8 @@
 #include <gtest/gtest.h>
-
-int add(int a, int b) {
-	return a + b;
-}
+#include "../src/qoi.cpp"
 
 TEST(MathTest, AddWorks) {
-	EXPECT_EQ(add(2, 3), 5);
+	EXPECT_EQ(decode(0, nullptr), -1);
 }
 
 int main(int argc, char** argv) {
