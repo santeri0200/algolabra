@@ -5,7 +5,7 @@ OPTIMISE = -Ofast -march=native -DNDEBUG
 TESTINGFLAGS  = -Ithird_party/googletest/googletest/include -pthread
 COVERAGEFLAGS = -O0 -g --coverage
 GTEST_LIB_DIR = vendor/googletest/build/lib
-GTEST_LIBS    = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a
+GTEST_LIBS    = -L$(GTEST_LIB_DIR) -lgtest -lgtest_main
 TESTS         = tests/qoi.cpp
 TEST_BIN      = out/test
 
