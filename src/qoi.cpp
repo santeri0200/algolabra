@@ -101,7 +101,7 @@ int decode(const char* source) {
   while (file.read((char*) &data, sizeof data)) {
     switch (data) {
       case 0b00000000 ... 0b00000000: // OP_INDEX
-        current_color.data = colors[data & 0b00111111];
+        current_color = colors[data & 0b00111111];
         break;
       case 0b01000000 ... 0b01000000: // OP_DIFF
         current_color.color.r = (uint8_t)(current_color.color.r + cast_i2_to_i8((data & 0b00110000) >> 4));
@@ -163,7 +163,12 @@ int decode(const char* source) {
 }
 
 // The encoder currently accepts only well formatted 8-bit color data with the alpha channel intact.
-int encode(const uint8_t* data, uint32_t size) {
+// 
+// - uint8_t* output = reinterpret_cast<uint8_t*>((uint32_t*)malloc(size));
+// ret: length of output
+int encode(const uint8_t* data, uint32_t size, uint8_t* output) {
+  uint32_t offset = 0;
+
   ColorData colors[64] = {};
   ColorData previous_color = {.data = 0x000000FF}; // Current color is defined to start with rgb of 0 and alpha of 1.
 
@@ -197,24 +202,49 @@ int encode(const uint8_t* data, uint32_t size) {
     && da == lda
     ) {
       /* RUN +1 */
+      if (offset == 0) {
+        output[offset] = 0b11000001;
+        offset += 1;
+      } else {
+        uint8_t run = output[offset - 1] & 0b00111111;
+        if (run == 0b00111111) { return -1; } // IDK what to do here
+
+        output[offset - 1] = 0b11000000 | (run + 1);
+      }
     } else if (
          -32 <= dg && dg <= 31
       && -8 <= dr_dg && dr_dg <= 7
       && -8 <= db_dg && db_dg <= 7
     ) {
-      /* LUMA */
+      output[offset + 0] = 0b10000000 | dg;
+      output[offset + 1] = dr_dg << 4 | db_dg;
+
+      offset += 2;
     } else if (
          -2 <= dr && dr <= 1
       && -2 <= dg && dg <= 1
       && -2 <= db && db <= 1
     ) {
-      /* DIFF */
+      output[offset] = 0b01000000 | dr << 4 | dg << 2 | db;
+      offset += 1;
     } else if (colors[pos].data == pixel.data) {
-      /* INDEX*/
+      output[offset] = pos;
+      offset += 1;
     } else if (da == 0) {
-      /* RGB */
+      output[offset + 0] = 0b11111110;
+      output[offset + 1] = pixel.color.r;
+      output[offset + 2] = pixel.color.g;
+      output[offset + 3] = pixel.color.b;
+
+      offset += 4;
     } else {
-      /* RGBA */
+      output[offset + 0] = 0b11111111;
+      output[offset + 1] = pixel.color.r;
+      output[offset + 2] = pixel.color.g;
+      output[offset + 3] = pixel.color.b;
+      output[offset + 4] = pixel.color.a;
+
+      offset += 5;
     }
 
     ldr = dr;
@@ -226,5 +256,5 @@ int encode(const uint8_t* data, uint32_t size) {
     colors[pos] = pixel;
   }
 
-  return 0;
+  return offset;
 }
