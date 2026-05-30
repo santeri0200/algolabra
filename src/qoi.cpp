@@ -35,12 +35,33 @@ __inline__ int8_t cast_i2_to_i8(uint8_t x) {
   return (int8_t)(x << 6) >> 6;
 }
 
+__inline__ int8_t cast_i8_to_i2(uint8_t x) {
+  int8_t y = x & 0b10000000;
+  int8_t z = x & 0b00000001;
+
+  return (y >> 6) | z;
+}
+
 __inline__ int8_t cast_i4_to_i8(uint8_t x) {
   return (int8_t)(x << 4) >> 4;
 }
 
+__inline__ int8_t cast_i8_to_i4(uint8_t x) {
+  int8_t y = x & 0b10000000;
+  int8_t z = x & 0b00000111;
+
+  return (y >> 4) | z;
+}
+
 __inline__ int8_t cast_i6_to_i8(uint8_t x) {
   return (int8_t)(x << 2) >> 2;
+}
+
+__inline__ int8_t cast_i8_to_i6(uint8_t x) {
+  int8_t y = x & 0b10000000;
+  int8_t z = x & 0b00011111;
+
+  return (y >> 2) | z;
 }
 
 struct Color {
@@ -57,7 +78,7 @@ union ColorData {
 
 int decode(const char* source) {
   uint8_t raw_headers[14] = {};
-  uint32_t colors[64] = {};
+  ColorData colors[64] = {};
   ColorData current_color = {.data = 0x000000FF}; // Current color is defined to start with rgb of 0 and alpha of 1.
 
   // Currently requires there to be one commandline argument (the filename)
@@ -141,10 +162,69 @@ int decode(const char* source) {
   return 0;
 }
 
-int encode(const uint8_t* data) {
-  uint8_t raw_headers[14] = {};
-  uint32_t colors[64] = {};
-  ColorData current_color = {.data = 0x000000FF}; // Current color is defined to start with rgb of 0 and alpha of 1.
+// The encoder currently accepts only well formatted 8-bit color data with the alpha channel intact.
+int encode(const uint8_t* data, uint32_t size) {
+  ColorData colors[64] = {};
+  ColorData previous_color = {.data = 0x000000FF}; // Current color is defined to start with rgb of 0 and alpha of 1.
+
+  int8_t ldr = 0;
+  int8_t ldg = 0;
+  int8_t ldb = 0;
+  int8_t lda = 0;
+
+  for (int i = 0; i < size; i++) {
+    ColorData pixel = reinterpret_cast<const ColorData*>(data)[i];
+
+    int8_t dr = pixel.color.r - previous_color.color.r;
+    int8_t dg = pixel.color.g - previous_color.color.g;
+    int8_t db = pixel.color.b - previous_color.color.b;
+    int8_t da = pixel.color.a - previous_color.color.a;
+
+    int8_t dr_dg = dr - dg;
+    int8_t db_dg = db - dg;
+
+    uint8_t pos = get_position_index(
+      pixel.color.r,
+      pixel.color.g,
+      pixel.color.b,
+      pixel.color.a
+    );
+
+    if (
+       dr == ldr
+    && dg == ldg
+    && db == ldb
+    && da == lda
+    ) {
+      /* RUN +1 */
+    } else if (
+         -32 <= dg && dg <= 31
+      && -8 <= dr_dg && dr_dg <= 7
+      && -8 <= db_dg && db_dg <= 7
+    ) {
+      /* LUMA */
+    } else if (
+         -2 <= dr && dr <= 1
+      && -2 <= dg && dg <= 1
+      && -2 <= db && db <= 1
+    ) {
+      /* DIFF */
+    } else if (colors[pos].data == pixel.data) {
+      /* INDEX*/
+    } else if (da == 0) {
+      /* RGB */
+    } else {
+      /* RGBA */
+    }
+
+    ldr = dr;
+    ldg = dg;
+    ldb = db;
+    lda = da;
+
+    previous_color = pixel;
+    colors[pos] = pixel;
+  }
 
   return 0;
 }
