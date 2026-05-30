@@ -4,15 +4,15 @@
 
 #include "qoi.cpp"
 
-int entry(int argc, char const* argv[]) {
+int entry(int argc, char const *argv[]) {
   if (argc != 2) {
     std::cerr << "Invalid amount of arguments!\n";
 
     return -1;
   }
 
-  const char* mode = argv[1];
-  const char* source = argv[2];
+  const char *mode = argv[1];
+  const char *source = argv[2];
 
   if (!std::filesystem::exists(source)) {
     return -1;
