@@ -3,6 +3,7 @@
 
 ## Documentation
 [Implementation documentation](documentation/implementation.md)
+[Testing documentation](documentation/testing.md)
 
 ### Setup
 - Clone the repo with `git clone --recurse-submodules`
