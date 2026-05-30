@@ -1,22 +1,22 @@
 #include <gtest/gtest.h>
-#include "../src/qoi.cpp"
+#include "../src/main.cpp"
 
-TEST(QOI_encode, ErrorOnInvalidArguments) {
-	EXPECT_EQ(encode(0, nullptr), -1);
+TEST(QOI_decode, ErrorOnInvalidArguments) {
+	EXPECT_EQ(entry(0, nullptr), -1);
 }
 
-TEST(QOI_encode, ErrorOnInvalidFilePath) {
+TEST(QOI_decode, ErrorOnInvalidFilePath) {
 	const int ARGC = 2;
-	const char* ARGV[] = { "algolab", "data/output.txt" };
+	const char* ARGV[] = { "algolab", "decode", "data/output.txt" };
 
-	EXPECT_EQ(encode(ARGC, ARGV), -1);
+	EXPECT_EQ(entry(ARGC, ARGV), -1);
 }
 
-TEST(QOI_encode, SucceedOnValidFilePath) {
+TEST(QOI_decode, SucceedOnValidFilePath) {
 	const int ARGC = 2;
-	const char* ARGV[] = { "algolab", "data/input.txt" };
+	const char* ARGV[] = { "algolab", "decode", "data/input.txt" };
 
-	EXPECT_EQ(encode(ARGC, ARGV), 0);
+	EXPECT_EQ(entry(ARGC, ARGV), 0);
 }
 
 int main(int argc, char** argv) {

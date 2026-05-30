@@ -55,19 +55,13 @@ union ColorData {
   uint32_t data;
 };
 
-int encode(int argc, char const* argv[]) {
+int decode(const char* source) {
   uint8_t raw_headers[14] = {};
   uint32_t colors[64] = {};
   ColorData current_color = {.data = 0x000000FF}; // Current color is defined to start with rgb of 0 and alpha of 1.
 
-  if (argc != 2) {
-    std::cerr << "Invalid amount of arguments!\n";
-
-    return -1;
-  }
-
   // Currently requires there to be one commandline argument (the filename)
-  std::ifstream file(argv[1], std::ios::binary);
+  std::ifstream file(source, std::ios::binary);
   if (!file || !file.is_open()) {
     std::cerr << "Error opening file!\n";
 
@@ -144,5 +138,13 @@ int encode(int argc, char const* argv[]) {
 
   file.close();
   
+  return 0;
+}
+
+int encode(const uint8_t* data) {
+  uint8_t raw_headers[14] = {};
+  uint32_t colors[64] = {};
+  ColorData current_color = {.data = 0x000000FF}; // Current color is defined to start with rgb of 0 and alpha of 1.
+
   return 0;
 }
