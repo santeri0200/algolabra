@@ -2,6 +2,9 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <array>
+
+#include "image.cpp"
 
 struct QOIHeaders {
   char magic[4];
@@ -190,11 +193,14 @@ int decode(const char *source) {
 // alpha channel intact.
 //
 // - uint8_t* output = reinterpret_cast<uint8_t*>((uint32_t*)malloc(size));
-// ret: length of output
-int encode(const uint8_t *data, uint32_t size, uint8_t *output) {
+// ret: IF positive THEN length of output ELSE error value
+int encode(Image img, uint8_t *output) {
+  std::vector<uint8_t> data = img.data;
+  uint32_t size = img.height * img.width;
+
   uint32_t offset = 0;
 
-  ColorData colors[64] = {};
+  std::array<ColorData, 64> colors = {};
   ColorData previous_color = {
       .data = 0x000000FF}; // Current color is defined to start with rgb of 0
                            // and alpha of 1.
@@ -205,7 +211,7 @@ int encode(const uint8_t *data, uint32_t size, uint8_t *output) {
   int8_t lda = 0;
 
   for (int i = 0; i < size; i++) {
-    ColorData pixel = reinterpret_cast<const ColorData *>(data)[i];
+    ColorData pixel = reinterpret_cast<const ColorData *>(&data)[i];
 
     int8_t dr = pixel.color.r - previous_color.color.r;
     int8_t dg = pixel.color.g - previous_color.color.g;
