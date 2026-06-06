@@ -6,14 +6,14 @@ TEST(QOI_decode, ErrorOnInvalidArguments) {
 }
 
 TEST(QOI_decode, ErrorOnInvalidFilePath) {
-	const int ARGC = 2;
+	const int ARGC = 3;
 	const char* ARGV[] = { "algolab", "qoi", "decode", "data/output.txt" };
 
 	EXPECT_EQ(entry(ARGC, ARGV), -1);
 }
 
 TEST(QOI_decode, SucceedOnValidFilePath) {
-	const int ARGC = 2;
+	const int ARGC = 3;
 	const char* ARGV[] = { "algolab", "qoi", "decode", "data/input.txt" };
 
 	EXPECT_EQ(entry(ARGC, ARGV), 0);
