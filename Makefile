@@ -1,4 +1,4 @@
-CPPFLAGS = -std=c++20
+CPPFLAGS = -std=c++20 -lz
 WARNINGS = -Wall -Wextra -Wshadow -pedantic
 
 TESTINGFLAGS  = -Ivendor/googletest/googletest/include -pthread
