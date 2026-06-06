@@ -5,7 +5,7 @@ TESTINGFLAGS  = -Ivendor/googletest/googletest/include -pthread
 COVERAGEFLAGS = -O0 -g --coverage
 GTEST_LIB_DIR = vendor/googletest/build/lib
 GTEST_LIBS    = -L$(GTEST_LIB_DIR) -lgtest -lgtest_main
-TESTS         = tests/qoi.cpp
+TESTS         = tests/qoi.cpp tests/png.cpp
 TEST_BIN      = out/test
 
 main:
