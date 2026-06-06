@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdint>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <array>
@@ -12,9 +13,9 @@
 namespace png {
   static uint32_t Paeth(uint32_t a, uint32_t b, uint32_t c) {
       uint32_t p = a + b - c;
-      uint32_t pa = abs(p - a);
-      uint32_t pb = abs(p - b);
-      uint32_t pc = abs(p - c);
+      uint32_t pa = abs((int32_t)(p - a));
+      uint32_t pb = abs((int32_t)(p - b));
+      uint32_t pc = abs((int32_t)(p - c));
 
       if (pa <= pb && pa <= pc) return a;
       if (pb <= pc) return b;
