@@ -3,12 +3,14 @@
 #include <fstream>
 #include <iostream>
 #include <array>
+#include <vector>
 
 #include "image.cpp"
 
 namespace qoi {
+  #pragma pack(1)
   struct QOIHeaders {
-    char magic[4];
+    std::array<char, 4> magic;
     uint32_t width;
     uint32_t height;
     uint8_t channels;
@@ -63,15 +65,13 @@ namespace qoi {
     return (y >> 2) | z;
   }
 
-  struct Color {
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-    uint8_t a;
-  };
-
   union ColorData {
-    Color color;
+    struct Color {
+      uint8_t r;
+      uint8_t g;
+      uint8_t b;
+      uint8_t a;
+    } color;
     uint32_t data;
   };
 
@@ -195,88 +195,100 @@ namespace qoi {
   //
   // - uint8_t* output = reinterpret_cast<uint8_t*>((uint32_t*)malloc(size));
   // ret: IF positive THEN length of output ELSE error value
-  int encode(Image img, uint8_t *output) {
+  int encode(Image img, std::vector<uint8_t> &output) {
+    output.resize(img.height * img.width * 5 + 14 + 8); // Reserve worst case
+
     std::vector<uint8_t> data = img.data;
     uint32_t size = img.height * img.width;
 
-    uint32_t offset = 0;
+    std::cout << img.height << " - " << img.width << "\n";
+
+    QOIHeaders headers = {
+      .magic = {'q', 'o', 'i', 'f'},
+      .width = htobe32(img.width),
+      .height = htobe32(img.height),
+      .channels = 4,
+      .colorspace = 0,
+    };
+
+    Headers h = {};
+    h.structure = headers;
+
+    memcpy(output.data(), h.data, sizeof(headers));
+
+    uint32_t offset = 14;
 
     std::array<ColorData, 64> colors = {};
-    ColorData previous_color = {
-        .data = 0x000000FF}; // Current color is defined to start with rgb of 0
-                            // and alpha of 1.
+    ColorData previous_color = { .color = { .a = 255 }}; // Current color is defined to start with rgb of 0
+                                                         // and alpha of 1.
 
-    int8_t ldr = 0;
-    int8_t ldg = 0;
-    int8_t ldb = 0;
-    int8_t lda = 0;
-
+    int run = 0;
+    const ColorData* pixels = reinterpret_cast<const ColorData *>(data.data());
     for (int i = 0; i < size; i++) {
-      ColorData pixel = reinterpret_cast<const ColorData *>(&data)[i];
+      ColorData pixel = pixels[i];
 
-      int8_t dr = pixel.color.r - previous_color.color.r;
-      int8_t dg = pixel.color.g - previous_color.color.g;
-      int8_t db = pixel.color.b - previous_color.color.b;
-      int8_t da = pixel.color.a - previous_color.color.a;
+      if (pixel.data == previous_color.data) {
+        run++;
+        if (run == 62 || i == size - 1) {
+            output[offset++] = 0xC0 | (run - 1);
+            run = 0;
+        }
 
-      int8_t dr_dg = dr - dg;
-      int8_t db_dg = db - dg;
+        continue;
+      }
+
+      if (run > 0) {
+        output[offset++] = 0xC0 | (run - 1);
+        run = 0;
+      }
+
+      int32_t dr = pixel.color.r - previous_color.color.r;
+      int32_t dg = pixel.color.g - previous_color.color.g;
+      int32_t db = pixel.color.b - previous_color.color.b;
+      int32_t da = pixel.color.a - previous_color.color.a;
+
+      int32_t dr_dg = dr - dg;
+      int32_t db_dg = db - dg;
 
       uint8_t pos = get_position_index(pixel.color.r, pixel.color.g,
                                       pixel.color.b, pixel.color.a);
 
-      if (dr == ldr && dg == ldg && db == ldb && da == lda) {
-        /* RUN +1 */
-        if (offset == 0) {
-          output[offset] = 0b11000001;
-          offset += 1;
-        } else {
-          uint8_t run = output[offset - 1] & 0b00111111;
-          if (run == 0b00111111) {
-            return -1;
-          } // IDK what to do here
-
-          output[offset - 1] = 0b11000000 | (run + 1);
-        }
-      } else if (-32 <= dg && dg <= 31 && -8 <= dr_dg && dr_dg <= 7 &&
-                -8 <= db_dg && db_dg <= 7) {
-        output[offset + 0] = 0b10000000 | dg;
-        output[offset + 1] = dr_dg << 4 | db_dg;
-
-        offset += 2;
+      if (colors[pos].data == pixel.data) {
+        output[offset++] = pos;
       } else if (-2 <= dr && dr <= 1 && -2 <= dg && dg <= 1 && -2 <= db &&
-                db <= 1) {
-        output[offset] = 0b01000000 | dr << 4 | dg << 2 | db;
-        offset += 1;
-      } else if (colors[pos].data == pixel.data) {
-        output[offset] = pos;
-        offset += 1;
+                db <= 1 && da == 0) {
+        output[offset++] = 0x40 | dr << 4 | dg << 2 | db;
+      } else if (-32 <= dg && dg <= 31 && -8 <= dr_dg && dr_dg <= 7 &&
+                -8 <= db_dg && db_dg <= 7 && da == 0) {
+        output[offset++] = 0x80 | dg;
+        output[offset++] = dr_dg << 4 | db_dg;
       } else if (da == 0) {
-        output[offset + 0] = 0b11111110;
-        output[offset + 1] = pixel.color.r;
-        output[offset + 2] = pixel.color.g;
-        output[offset + 3] = pixel.color.b;
-
-        offset += 4;
+        output[offset++] = 0xFE;
+        output[offset++] = pixel.color.r;
+        output[offset++] = pixel.color.g;
+        output[offset++] = pixel.color.b;
       } else {
-        output[offset + 0] = 0b11111111;
-        output[offset + 1] = pixel.color.r;
-        output[offset + 2] = pixel.color.g;
-        output[offset + 3] = pixel.color.b;
-        output[offset + 4] = pixel.color.a;
-
-        offset += 5;
+        output[offset++] = 0xFF;
+        output[offset++] = pixel.color.r;
+        output[offset++] = pixel.color.g;
+        output[offset++] = pixel.color.b;
+        output[offset++] = pixel.color.a;
       }
-
-      ldr = dr;
-      ldg = dg;
-      ldb = db;
-      lda = da;
 
       previous_color = pixel;
       colors[pos] = pixel;
     }
+    
+    output[offset++] = 0;
+    output[offset++] = 0;
+    output[offset++] = 0;
+    output[offset++] = 0;
+    output[offset++] = 0;
+    output[offset++] = 0;
+    output[offset++] = 0;
+    output[offset++] = 1;
 
+    output.resize(offset);
     return offset;
   }
 }
