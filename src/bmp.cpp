@@ -43,12 +43,14 @@ namespace bmp {
     );
 
     if (data.size() < 14) {
+      std::cerr << "No header\n";
       return -1;
     }
 
     uint16_t identity = 0;
     memcpy(&identity, &data[0], sizeof(identity));
     if (identity != 0x4D42) {
+      std::cerr << "Wrong identity\n";
       return -1;
     }
 
@@ -78,6 +80,7 @@ namespace bmp {
         }
         break;
       default:
+        std::cerr << "Not supported dib headers\n";
         return -3;
     }
 
@@ -103,12 +106,18 @@ namespace bmp {
 
           uint32_t index = (row[slot] >> shift) & 0x1;
           uint32_t value = bgr_to_rgba(palette[index]);
-          output.data.push_back(value);
+          output.data.push_back((value >> 24) & 0xFF);
+          output.data.push_back((value >> 16) & 0xFF);
+          output.data.push_back((value >>  8) & 0xFF);
+          output.data.push_back((value >>  0) & 0xFF);
         } else if (nbits == 2) {
+          std::cerr << "Unsupported bit depth: 2\n";
           return -2;
         } else if (nbits == 4) {
+          std::cerr << "Unsupported bit depth: 4\n";
           return -2;
         } else if (nbits == 16) {
+          std::cerr << "Unsupported bit depth: 16\n";
           return -2;
         } else if (nbits == 24) {
           uint32_t slot = x * 3;
@@ -118,8 +127,12 @@ namespace bmp {
 
           uint32_t d = (a << 16) | (b << 8) | c;
           uint32_t value = bgr_to_rgba(d);
-          output.data.push_back(value);
+          output.data.push_back((value >> 24) & 0xFF);
+          output.data.push_back((value >> 16) & 0xFF);
+          output.data.push_back((value >>  8) & 0xFF);
+          output.data.push_back((value >>  0) & 0xFF);
         } else if (nbits == 32) {
+          std::cerr << "Unsupported bit depth: 32\n";
           return -2;
         } else { return -1; }
       }
