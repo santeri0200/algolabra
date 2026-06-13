@@ -8,7 +8,7 @@ GTEST_LIBS    = -L$(GTEST_LIB_DIR) -lgtest -lgtest_main
 TESTS         = tests/qoi.cpp tests/png.cpp
 TEST_BIN      = out/test
 
-main:
+main: clean
 	mkdir -p out
 	g++ $(CPPFLAGS) -o out/main src/main.cpp
 
