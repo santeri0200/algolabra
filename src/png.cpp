@@ -153,41 +153,39 @@ namespace png {
 
     png.insert(png.end(), data.begin(), data.end());
 
-    uint32_t crc = crc32(
-      crc32(0, nullptr, 0),
-      &png[png.size() - 4],
-      4 + data.size()
-    );
+    uint32_t crc = crc32(0, nullptr, 0);
+    crc = crc32(crc, (const uint8_t*)type, 4);
+    crc = crc32(crc, data.data(), data.size());
 
     WriteBE32(png, crc);
   }
 
-  int encode(Image img, uint32_t type, uint8_t *output) {
-
+  int encode(Image img, std::vector<uint8_t> &output) {
     std::vector<uint8_t> data = img.data;
     uint32_t width = img.width;
     uint32_t height = img.height;
 
     std::array<uint8_t, 8> signature{ 137, 80, 78, 71, 13, 10, 26, 10 };
-    std::vector<uint8_t> png;
-    uint32_t lenght = width * height;
 
-    png.insert(png.end(), signature.begin(), signature.end());
+    output.insert(output.end(), signature.begin(), signature.end());
 
     std::vector<uint8_t> ihdr; {
       WriteBE32(ihdr, width);
       WriteBE32(ihdr, height);
 
-      ihdr.push_back(8); // bit depth
-      ihdr.push_back(6); // RGBA
-      ihdr.push_back(0); // compression
-      ihdr.push_back(0); // filter
-      ihdr.push_back(0); // interlace
+      ihdr.insert(ihdr.end(), {
+        8, // bit depth
+        6, // RGBA
+        0, // compression
+        0, // filter
+        0, // interlace
+      });
 
-      pushChunk(png, "IHDR", ihdr);
+      pushChunk(output, "IHDR", ihdr);
     }
 
-    std::vector<uint8_t> filtered(height * (width * 4 + 1)); {
+    std::vector<uint8_t> filtered;
+    filtered.reserve(height * (width * 4 + 1)); {
       uint32_t stride = width * 4;
       for (uint32_t y = 0; y < height; ++y) {
         filtered.push_back(0);
@@ -213,10 +211,8 @@ namespace png {
     }
 
     compressed.resize(compressedSize);
-    pushChunk(png, "IDAT", compressed); {
-      std::vector<uint8_t> empty;
-      pushChunk(png, "IEND", empty);
-    }
+    pushChunk(output, "IDAT", compressed);
+    pushChunk(output, "IEND", std::vector<uint8_t>{});
 
     return 0;
   }
