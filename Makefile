@@ -1,7 +1,7 @@
 CPPFLAGS = -std=c++20 -lz
 WARNINGS = -Wall -Wextra -Wshadow -pedantic
 
-TESTINGFLAGS  = -Ivendor/googletest/googletest/include -pthread
+TESTINGFLAGS  = -DUSE_GTEST_MAIN -Ivendor/googletest/googletest/include -pthread
 COVERAGEFLAGS = -O0 -g --coverage
 GTEST_LIB_DIR = vendor/googletest/build/lib
 GTEST_LIBS    = -L$(GTEST_LIB_DIR) -lgtest -lgtest_main

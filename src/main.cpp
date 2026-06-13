@@ -65,6 +65,8 @@ int entry(int argc, char const *argv[]) {
   return 0;
 }
 
+#ifndef USE_GTEST_MAIN
 int main(int argc, char const *argv[]) {
   entry(argc, argv);
 }
+#endif
