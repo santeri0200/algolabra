@@ -37,7 +37,9 @@ TEST(PNG_decode, SucceedOnValidFilePath) {
 	EXPECT_EQ(entry(ARGC, ARGV), 0);
 }
 
+#ifdef USE_GTEST_MAIN
 int main(int argc, char** argv) {
 	testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 }
+#endif
