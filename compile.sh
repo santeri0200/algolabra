@@ -1,1 +1,1 @@
-make clean && make main && out/main data/input.txt
+make main && out/main both compare data/dice.bmp
