@@ -27,6 +27,15 @@ uint32_t bgr_to_rgba(uint32_t x) {
   return (r << 24) | (g << 16) | (b << 8) | 0xFF;
 }
 
+uint32_t abgr_to_rgba(uint32_t x) {
+  uint32_t a = (x >> 24) & 0xFF;
+  uint32_t b = (x >> 16) & 0xFF;
+  uint32_t g = (x >>  8) & 0xFF;
+  uint32_t r = (x >>  0) & 0xFF;
+
+  return (r << 24) | (g << 16) | (b << 8) | a;
+}
+
 namespace bmp {
   int decode(const char *source, Image &output) {
     // Currently requires there to be one commandline argument (the filename)
@@ -116,24 +125,34 @@ namespace bmp {
         } else if (nbits == 4) {
           std::cerr << "Unsupported bit depth: 4\n";
           return -2;
+        } else if (nbits == 8) {
+          std::cerr << "Unsupported bit depth: 8\n";
+          return -2;
         } else if (nbits == 16) {
           std::cerr << "Unsupported bit depth: 16\n";
           return -2;
         } else if (nbits == 24) {
-          uint32_t slot = x * 3;
-          uint32_t a = row[slot + 0];
-          uint32_t b = row[slot + 1];
-          uint32_t c = row[slot + 2];
+          uint32_t a = row[x * 3 + 0];
+          uint32_t b = row[x * 3 + 1];
+          uint32_t c = row[x * 3 + 2];
 
-          uint32_t d = (a << 16) | (b << 8) | c;
-          uint32_t value = bgr_to_rgba(d);
+          uint32_t value = bgr_to_rgba((a << 16) | (b << 8) | c);
           output.data.push_back((value >> 24) & 0xFF);
           output.data.push_back((value >> 16) & 0xFF);
           output.data.push_back((value >>  8) & 0xFF);
           output.data.push_back((value >>  0) & 0xFF);
         } else if (nbits == 32) {
-          std::cerr << "Unsupported bit depth: 32\n";
-          return -2;
+          uint32_t a = row[x * 4 + 0];
+          uint32_t b = row[x * 4 + 1];
+          uint32_t c = row[x * 4 + 2];
+          uint32_t d = row[x * 4 + 3];
+
+          uint32_t value = abgr_to_rgba((a << 24) | (b << 16) | (c << 8) | d);
+
+          output.data.push_back((value >> 24) & 0xFF);
+          output.data.push_back((value >> 16) & 0xFF);
+          output.data.push_back((value >>  8) & 0xFF);
+          output.data.push_back((value >>  0) & 0xFF);
         } else { return -1; }
       }
     }
