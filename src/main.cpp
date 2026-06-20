@@ -65,6 +65,8 @@ int entry(int argc, char const *argv[]) {
         std::cerr << "Failed to encode!\n";
         return -1;
       }
+    } else {
+      return -1;
     }
 
     std::ofstream outFile(dist, std::ios::binary);
@@ -74,6 +76,8 @@ int entry(int argc, char const *argv[]) {
     } else {
       std::cerr << "Failed to write the file\n";
     }
+
+    return 0;
   } else  if (strcmp(mode, "compare") == 0) {
     Image image = {};
     if (bmp::decode(source, image) < 0) {
@@ -104,6 +108,8 @@ int entry(int argc, char const *argv[]) {
       std::cout << "png size: " << pngSize << " bytes, compression ratio: " << (float)originalSize / (float)pngSize << ":1\n";
 
       std::cout << "\nqoi output is the " << (float)qoiSize / (float)pngSize * 100.0 << "% size of png output.\n";
+
+      return 0;
     } else if (strcmp(type, "qoi") == 0) {
       std::vector<uint8_t>qoiOutput;
       if (qoi::encode(image, qoiOutput) < 0) {
@@ -117,6 +123,8 @@ int entry(int argc, char const *argv[]) {
       std::cout << "width: " << image.width << ", height: " << image.width << ", pixels: " << image.data.size() / 4 << '\n';
       std::cout << "original size: " << originalSize << " bytes\n";
       std::cout << "qoi size: " << qoiSize << " bytes, compression ratio: " << (float)originalSize / (float)qoiSize << ":1\n";
+
+      return 0;
     } else if (strcmp(type, "png") == 0) {
       std::vector<uint8_t>pngOutput;
       if (png::encode(image, pngOutput) < 0) {
@@ -130,10 +138,12 @@ int entry(int argc, char const *argv[]) {
       std::cout << "width: " << image.width << ", height: " << image.width << ", pixels: " << image.data.size() / 4 << '\n';
       std::cout << "original size: " << originalSize << " bytes\n";
       std::cout << "png size: " << pngSize << " bytes, compression ratio: " << (float)originalSize / (float)pngSize << ":1\n";
+
+      return 0;
     }
   }
 
-  return 0;
+  return -1;
 }
 
 #ifndef USE_GTEST_MAIN
