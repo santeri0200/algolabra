@@ -4,7 +4,6 @@ Unit testing coverage report.
 What was tested and how?
 - [x] Algorithm entry point accepts the correct amount of variables
 - [x] Algorithm entry point accepts only valid variables
-- [ ] User can change the algorithm used
+- [x] User can change the algorithm used
   - [x] QOI and PNG switches work correctly
-  - [ ] Not choosing the algoritm - the nature of the file could be inferred from the signature
-- [ ] User can get algorithm usage statistics
+- [x] Algorithm encoding-decoding produces the original data
