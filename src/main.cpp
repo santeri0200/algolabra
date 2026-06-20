@@ -6,6 +6,14 @@
 #include "png.cpp"
 #include "bmp.cpp"
 
+int source_exists(const char *source) {
+  if (!std::filesystem::exists(source)) {
+    return -1;
+  }
+
+  return 0;
+}
+
 int entry(int argc, char const *argv[]) {
   if (argc < 4) {
     std::cerr << "Invalid amount of arguments!" << argc << "\n";
@@ -17,14 +25,20 @@ int entry(int argc, char const *argv[]) {
   const char *mode = argv[2];
   const char *source = argv[3];
 
-  if (!std::filesystem::exists(source)) {
+  if (source_exists(source) != 0) {
     return -1;
   }
 
-  if (strcmp(type, "qoi") == 0 && strcmp(mode, "decode") == 0) {
-    return qoi::decode(source);
-  } else if (strcmp(type, "png") == 0 && strcmp(mode, "decode") == 0) {
-    return png::decode(source);
+  if (strcmp(mode, "decode") == 0) {
+    Image image = {};
+
+    if (strcmp(type, "qoi") == 0) {
+      return qoi::decode(source, image);
+    } else if (strcmp(type, "png") == 0) {
+      return png::decode(source, image);
+    } else if (strcmp(type, "bmp") == 0) {
+      return bmp::decode(source, image);
+    }
   } else if (strcmp(mode, "encode") == 0) {
     if (argc < 5) {
       std::cerr << "Invalid amount of arguments!" << argc << "\n";
