@@ -14,6 +14,13 @@
 - Run the project
   - `sh compile.sh`
 
+### Running the project
+- Run the comparison feature `out/main %target% compare input.bmp`
+  - Where `%target%` is either `qoi`, `png` or `both`
+- Encode BMP images to either PNG or QOI `out/main %target% encode input output`
+  - Where `%target%` is either `qoi` or `png`
+  - This feature allows inspection of the outputs
+
 ### Weekly reports
 [Week 1](documentation/weekly_report_1.md)
 [Week 2](documentation/weekly_report_2.md)
