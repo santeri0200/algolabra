@@ -221,8 +221,6 @@ namespace qoi {
     std::vector<uint8_t> data = img.data;
     uint32_t size = img.height * img.width;
 
-    std::cout << img.height << " - " << img.width << "\n";
-
     QOIHeaders headers = {
       .magic = {'q', 'o', 'i', 'f'},
       .width = htobe32(img.width),
