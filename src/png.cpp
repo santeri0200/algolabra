@@ -5,6 +5,7 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <cstring>
 
 #include "image.cpp"
 
@@ -22,7 +23,11 @@ namespace png {
       return c;
   }
 
-  int decode(const char *source) {
+  uint32_t ReadBE32(const uint8_t* p) {
+    return (uint32_t(p[0]) << 24) | (uint32_t(p[1]) << 16) | (uint32_t(p[2]) << 8)  | uint32_t(p[3]);
+  }
+
+  int decode(const char *source, Image &output) {
     std::array<uint8_t, 8> signature{ 137, 80, 78, 71, 13, 10, 26, 10 };
     uint32_t width     = 0;
     uint32_t height    = 0;
@@ -46,23 +51,27 @@ namespace png {
       return -1;
     }
 
-    uint8_t pos = 8;
+    bool seenIEND = false;
+    bool seenIHDR = false;
+
+    size_t pos = 8;
     std::vector<uint8_t> idat; // Image data
     while (pos + 12 <= data.size()) {
-      uint32_t length = *(uint32_t*)(&data[pos]);
+      uint32_t length = ReadBE32(&data[pos]);
       pos += 4;
 
-      uint32_t type = *(uint32_t*)(&data[pos]);
+      if (data.size() < pos + 4) return -1;
+      uint32_t type = ReadBE32(&data[pos]);
       pos += 4;
 
-      if (data.size() < pos + length + 4) {
-        return -1;
-      }
+      size_t chunkEnd = pos + length + 4;
+      if (data.size() < chunkEnd) return -1;
 
       if (type == 0x49484452) {
-        // IHDR
-        width     = *(uint32_t*)(&data[pos + 0]);
-        height    = *(uint32_t*)(&data[pos + 4]);
+        seenIHDR = true;
+
+        width     = ReadBE32(&data[pos + 0]);
+        height    = ReadBE32(&data[pos + 4]);
         bitDepth  = data[pos + 8];
         colorType = data[pos + 9];
 
@@ -72,8 +81,19 @@ namespace png {
         if (colorType != 2 && colorType != 6) { return -1; }
       } else if (type == 0x49444154) {
         // IDAT
+        if (!seenIHDR) return -1;
+        idat.insert(
+          idat.end(),
+          data.begin() + pos,
+          data.begin() + pos + length
+        );
       } else if (type == 0x49454E44) {
-        // IEND
+        seenIEND = true;
+        if (length != 0) return -1;
+
+        pos += length; // zero
+        pos += 4;      // CRC
+        break;
       } else {
         return -1;
       }
@@ -82,14 +102,19 @@ namespace png {
       pos += 4;
     }
 
+    if (!seenIEND || !seenIHDR) return -1;
+
     uint32_t channels = (colorType == 6) ? 4 : 3;
     uint32_t stride = width * channels;
-    uint64_t inflatedSize = (uint64_t)(stride + 1) * height;
+    uLongf inflatedSize = (uLongf)(stride + 1ULL) * height;
 
     std::vector<uint8_t> inflatedData(inflatedSize);
     if (uncompress(inflatedData.data(), &inflatedSize, idat.data(), idat.size()) != Z_OK) {
-      return -1;
+      return -1337;
     }
+
+    size_t expectedSize = static_cast<size_t>(stride + 1) * height;
+    if (inflatedSize != expectedSize) return -2;
 
     std::vector<uint8_t> raw(height * stride);
     for (uint32_t y = 0; y < height; ++y) {
@@ -110,21 +135,37 @@ namespace png {
             out[x] = v;
             break;
           case 1:
-            out[x] = (v + left);
+            out[x] = v + left;
             break;
           case 2:
-            out[x] = (v + up);
+            out[x] = v + up;
             break;
           case 3:
-            out[x] = (v + ((left + up) >> 1));
+            out[x] = v + ((left + up) >> 1);
             break;
           case 4:
-            out[x] = (v + Paeth(left, up, upLeft));
+            out[x] = v + Paeth(left, up, upLeft);
             break;
 
           default:
             return -1;
         }
+      }
+    }
+
+    output.width = width;
+    output.height = height;
+
+    output.data.resize(width * height * 4);
+    if (colorType == 6) {
+      std::memcpy(output.data.data(), raw.data(), raw.size());
+    } else {
+      size_t j = 0;
+      for (size_t i = 0; i < width * height; ++i) {
+        output.data[j++] = raw[i * 3 + 0];
+        output.data[j++] = raw[i * 3 + 1];
+        output.data[j++] = raw[i * 3 + 2];
+        output.data[j++] = 255;
       }
     }
 
