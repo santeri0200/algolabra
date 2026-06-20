@@ -1,9 +1,39 @@
 #include <gtest/gtest.h>
 #include "../src/main.cpp"
 
-TEST(BMP_decode, FailOnInvalidBMP) {
+TEST(Main, FailOnInvalidArgumentLengts) {
+	{
+		const int ARGC = 4;
+		const char* ARGV[ARGC] = { "algolab", "png", "encode", "data/test.bmp" };
+
+		EXPECT_EQ(entry(ARGC, ARGV), -1);
+	};
+
+	{
+		const int ARGC = 3;
+		const char* ARGV[ARGC] = { "algolab", "png", "decode" };
+
+		EXPECT_EQ(entry(ARGC, ARGV), -1);
+	};
+}
+
+TEST(Main, FailOnInvalidTarget) {
 	const int ARGC = 5;
-	const char* ARGV[ARGC] = { "algolab", "bmp", "decode", "data/fake.bmp", "out.png" };
+	const char* ARGV[ARGC] = { "algolab", "jpg", "encode", "data/test.bmp", "out.jpg" };
+
+	EXPECT_EQ(entry(ARGC, ARGV), -1);
+}
+
+TEST(Main, FailOnInvalidFeature) {
+	const int ARGC = 5;
+	const char* ARGV[ARGC] = { "algolab", "png", "reconstruct", "data/test.bmp", "out.png" };
+
+	EXPECT_EQ(entry(ARGC, ARGV), -1);
+}
+
+TEST(BMP_decode, FailOnInvalidBMP) {
+	const int ARGC = 4;
+	const char* ARGV[ARGC] = { "algolab", "bmp", "decode", "data/fake.bmp" };
 
 	EXPECT_EQ(entry(ARGC, ARGV), -1);
 }
