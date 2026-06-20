@@ -1,16 +1,16 @@
-CPPFLAGS = -std=c++20 -lz
+CPPFLAGS = -std=c++20
 WARNINGS = -Wall -Wextra -Wshadow -pedantic
 
 TESTINGFLAGS  = -DUSE_GTEST_MAIN -Ivendor/googletest/googletest/include -pthread
 COVERAGEFLAGS = -O0 -g --coverage
 GTEST_LIB_DIR = vendor/googletest/build/lib
-GTEST_LIBS    = -L$(GTEST_LIB_DIR) -lgtest -lgtest_main
+GTEST_LIBS    = -L$(GTEST_LIB_DIR) -lgtest -lgtest_main -lz -pthread
 TESTS         = tests/main.cpp
 TEST_BIN      = out/test
 
 main: clean
 	mkdir -p out
-	g++ $(CPPFLAGS) -o out/main src/main.cpp
+	g++ $(CPPFLAGS) $(WARNINGS) -o out/main src/main.cpp -lz
 
 $(TEST_BIN): $(TESTS)
 	mkdir -p out
