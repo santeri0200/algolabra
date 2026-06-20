@@ -26,10 +26,7 @@ namespace qoi {
     char magic[4] = {'q', 'o', 'i', 'f'};
 
     // Magic does not match
-    if ((uint32_t)(headers.data[0]) != (uint32_t)(magic[0])) {
-      return -1;
-    }
-
+    for (int i = 0; i < sizeof magic; ++i) if (headers.data[i] != magic[i]) return -1;
     return 0;
   }
 
@@ -75,13 +72,7 @@ namespace qoi {
     uint32_t data;
   };
 
-  int decode(const char *source) {
-    uint8_t raw_headers[14] = {};
-    ColorData colors[64] = {};
-    ColorData current_color = {
-        .data = 0x000000FF}; // Current color is defined to start with rgb of 0
-                            // and alpha of 1.
-
+  int decode(const char *source, Image &output) {
     // Currently requires there to be one commandline argument (the filename)
     std::ifstream file(source, std::ios::binary);
     if (!file || !file.is_open()) {
@@ -90,104 +81,133 @@ namespace qoi {
       return -1;
     }
 
-    for (auto slot : raw_headers)
-      file.read((char *)&slot, 1);
+    std::vector<uint8_t> data(
+      (std::istreambuf_iterator<char>(file)),
+      std::istreambuf_iterator<char>()
+    );
 
-    Headers headers;
-    memcpy(headers.data, raw_headers, sizeof headers.data);
-    if (!chech_header_validity(headers)) {
+    if (data.size() < 14) {
+      std::cerr << "No header\n";
       return -1;
     }
 
-    uint8_t data;
-    while (file.read((char *)&data, sizeof data)) {
-      switch (data) {
-      case 0b00000000 ... 0b00000000: // OP_INDEX
-        current_color = colors[data & 0b00111111];
+    Headers headers = {};
+    for (int i = 0; i < sizeof headers.data; ++i) headers.data[i] = data[i];
+    if (chech_header_validity(headers) != 0) { return -1; }
+
+    ColorData colors[64] = {};
+    ColorData current_color = { .color = { .a = 255 }}; // Current color is defined to start with rgb of 0
+                                                         // and alpha of 1.
+
+    output.height = be32toh(headers.structure.height);
+    output.width = be32toh(headers.structure.width);
+
+    bool ended = false;
+    uint32_t i = 14;
+    while (i < data.size() - 7) {
+      uint8_t b0 = data[i + 0];
+      uint8_t b1 = data[i + 1];
+      uint8_t b2 = data[i + 2];
+      uint8_t b3 = data[i + 3];
+      uint8_t b4 = data[i + 4];
+      uint8_t b5 = data[i + 5];
+      uint8_t b6 = data[i + 6];
+      uint8_t b7 = data[i + 7];
+
+      if (
+        b0 == 0x0 &&
+        b1 == 0x0 &&
+        b2 == 0x0 &&
+        b3 == 0x0 &&
+        b4 == 0x0 &&
+        b5 == 0x0 &&
+        b6 == 0x0 &&
+        b7 == 0x1
+      ) {
+        ended = true;
         break;
-      case 0b01000000 ... 0b01000000: // OP_DIFF
-        current_color.color.r =
-            (uint8_t)(current_color.color.r +
-                      cast_i2_to_i8((data & 0b00110000) >> 4));
-        current_color.color.g =
-            (uint8_t)(current_color.color.g +
-                      cast_i2_to_i8((data & 0b00001100) >> 2));
-        current_color.color.b =
-            (uint8_t)(current_color.color.b +
-                      cast_i2_to_i8((data & 0b00000011) >> 0));
-        break;
-      case 0b10000000 ... 0b10000000: // OP_LUMA
-        data = cast_i6_to_i8(data & 0b00111111);
-        current_color.color.r = (uint8_t)(current_color.color.r + data);
-        current_color.color.g = (uint8_t)(current_color.color.g + data);
-        current_color.color.b = (uint8_t)(current_color.color.b + data);
+      };
 
-        // Failed to read second LUMA byte
-        if (!file.read((char *)&data, sizeof data)) {
-          return -1;
-        }
-        current_color.color.r =
-            (uint8_t)(current_color.color.r -
-                      cast_i4_to_i8((data & 0b11110000) >> 4));
-        current_color.color.b =
-            (uint8_t)(current_color.color.b -
-                      cast_i4_to_i8((data & 0b00001111) >> 0));
-        break;
-      case 0b11000000 ... 0b11111100: // TODO: OP_RUN
+      switch (b0) {
+        case 0xFF: i++;
+          current_color.color.r = data[i++];
+          current_color.color.g = data[i++];
+          current_color.color.b = data[i++];
+          current_color.color.a = data[i++];
 
-        break;
-      case 0b11111110: // OP_RGB
-        // Failed to read first RGB byte
-        if (!file.read((char *)&data, sizeof data)) {
-          return -1;
-        }
-        current_color.color.r = data;
+          output.data.push_back(current_color.color.r);
+          output.data.push_back(current_color.color.g);
+          output.data.push_back(current_color.color.b);
+          output.data.push_back(current_color.color.a);
+          break;
+        case 0xFE: i++;
+          current_color.color.r = data[i++];
+          current_color.color.g = data[i++];
+          current_color.color.b = data[i++];
 
-        // Failed to read second RGB byte
-        if (!file.read((char *)&data, sizeof data)) {
-          return -1;
-        }
-        current_color.color.g = data;
+          output.data.push_back(current_color.color.r);
+          output.data.push_back(current_color.color.g);
+          output.data.push_back(current_color.color.b);
+          output.data.push_back(current_color.color.a);
+          break;
+        case 0xC0 ... 0xFD:
+          for (int r = 0; r < (b0 & 0x3F) + 1; ++r) {
+            output.data.push_back(current_color.color.r);
+            output.data.push_back(current_color.color.g);
+            output.data.push_back(current_color.color.b);
+            output.data.push_back(current_color.color.a);
+          }
 
-        // Failed to read third RGB byte
-        if (!file.read((char *)&data, sizeof data)) {
-          return -1;
-        }
-        current_color.color.b = data;
+          i++;
+          break;
+        case 0x00 ... 0x3F:
+          current_color = colors[data[i++] & 0b00111111];
+          output.data.push_back(current_color.color.r);
+          output.data.push_back(current_color.color.g);
+          output.data.push_back(current_color.color.b);
+          output.data.push_back(current_color.color.a);
+          break;
 
-        break;
-      case 0b11111111: // OP_RGBA
-        // Failed to read first RGBA byte
-        if (!file.read((char *)&data, sizeof data)) {
-          return -1;
-        }
-        current_color.color.r = data;
+        case 0x40 ... 0x7F:
+          current_color.color.r =
+              (uint8_t)(current_color.color.r + cast_i2_to_i8((data[i] & 0b00110000) >> 4));
+          current_color.color.g =
+              (uint8_t)(current_color.color.g + cast_i2_to_i8((data[i] & 0b00001100) >> 2));
+          current_color.color.b =
+              (uint8_t)(current_color.color.b + cast_i2_to_i8((data[i] & 0b00000011) >> 0));
 
-        // Failed to read second RGBA byte
-        if (!file.read((char *)&data, sizeof data)) {
-          return -1;
-        }
-        current_color.color.g = data;
+          output.data.push_back(current_color.color.r);
+          output.data.push_back(current_color.color.g);
+          output.data.push_back(current_color.color.b);
+          output.data.push_back(current_color.color.a);
+          i++;
+          break;
+        case 0x80 ... 0xBF:
+          current_color.color.r = (uint8_t)(current_color.color.r + cast_i6_to_i8(data[i] & 0b00111111));
+          current_color.color.g = (uint8_t)(current_color.color.g + cast_i6_to_i8(data[i] & 0b00111111));
+          current_color.color.b = (uint8_t)(current_color.color.b + cast_i6_to_i8(data[i] & 0b00111111));
+          i++;
 
-        // Failed to read third RGBA byte
-        if (!file.read((char *)&data, sizeof data)) {
-          return -1;
-        }
-        current_color.color.b = data;
+          // Failed to read second LUMA byte
+          current_color.color.r =
+              (uint8_t)(current_color.color.r - cast_i4_to_i8((data[i] & 0b11110000) >> 4));
+          current_color.color.b =
+              (uint8_t)(current_color.color.b - cast_i4_to_i8((data[i] & 0b00001111) >> 0));
 
-        // Failed to read fourth RGBA byte
-        if (!file.read((char *)&data, sizeof data)) {
-          return -1;
-        }
-        current_color.color.a = data;
-
-        break;
+          output.data.push_back(current_color.color.r);
+          output.data.push_back(current_color.color.g);
+          output.data.push_back(current_color.color.b);
+          output.data.push_back(current_color.color.a);
+          i++;
+          break;
       }
+
+      colors[get_position_index(current_color.color.r, current_color.color.g, current_color.color.b, current_color.color.a)] = current_color;
     }
 
     file.close();
 
-    return 0;
+    return -1 + (1 * ended);
   }
 
   // The encoder currently accepts only well formatted 8-bit color data with the
