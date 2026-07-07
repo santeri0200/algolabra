@@ -237,11 +237,12 @@ namespace png {
     }
 
     uint64_t compressedSize = compressBound(filtered.size());
+    uLongf zDestLen = static_cast<uLongf>(compressedSize);
     std::vector<uint8_t> compressed(compressedSize);
 
     int32_t rc = compress2(
       compressed.data(),
-      &compressedSize,
+      &zDestLen,
       filtered.data(),
       filtered.size(),
       Z_BEST_COMPRESSION
