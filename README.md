@@ -5,12 +5,22 @@
 [Implementation documentation](documentation/implementation.md)
 [Testing documentation](documentation/testing.md)
 
+### Background
+The project is developed on and configured to run on University provided 64-bit Linux systems (unknown-linux-gnu). There is no guarantee that the project is able to run on either Windows or MacOS platforms.
+
+Other requirements:
+- GCC/G++
+  - C++ 20 support is required
+If running on cubbli, you'll probably need to install the following:
+- `libgtest-dev cmake zlib1g-dev`
+
 ### Setup
 - Clone the repo with `git clone --recurse-submodules`
   - If you manage to clone the repo without the submodules and want to run test, run `git submodule update --init --recursive`
 - Install test vendor and run tests
   - `cd vendor/googletest && cmake -S . -B build && cmake --build build`
   - `make test`
+    - Note: This command is currently only available at the project root.
 - Run the project
   - `sh compile.sh`
 
