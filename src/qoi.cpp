@@ -247,6 +247,7 @@ namespace qoi {
 
       if (pixel.data == previous_color.data) {
         run++;
+        // QOI run encode is setup as `11xxxxxx`. If run is equal to 63 or 64, the byte overlaps with RGB or RGBA commands. Therefore it is limited to 62.
         if (run == 62 || i == size - 1) {
             output[offset++] = 0xC0 | (run - 1);
             run = 0;
