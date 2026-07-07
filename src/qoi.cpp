@@ -216,7 +216,10 @@ namespace qoi {
   // - uint8_t* output = reinterpret_cast<uint8_t*>((uint32_t*)malloc(size));
   // ret: IF positive THEN length of output ELSE error value
   int encode(Image img, std::vector<uint8_t> &output) {
-    output.resize(img.height * img.width * 5 + 14 + 8); // Reserve worst case
+    // Reserve worst case.
+    // This step is mainly to avoid additional allocations.
+    // The size comes from the maximum pixel encoding + header sizes.
+    output.resize(img.height * img.width * 5 + 14 + 8);
 
     std::vector<uint8_t> data = img.data;
     uint32_t size = img.height * img.width;
