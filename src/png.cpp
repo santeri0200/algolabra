@@ -195,7 +195,7 @@ namespace png {
     png.insert(png.end(), data.begin(), data.end());
 
     uint32_t crc = crc32(0, nullptr, 0);
-    crc = crc32(crc, (const uint8_t*)type, 4);
+    crc = crc32(crc, (const Bytef*)type, 4);
     crc = crc32(crc, data.data(), data.size());
 
     WriteBE32(png, crc);
