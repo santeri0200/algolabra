@@ -311,6 +311,6 @@ namespace qoi {
     output[offset++] = 1;
 
     output.resize(offset);
-    return offset;
+    return 0;
   }
 }
