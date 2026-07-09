@@ -27,7 +27,7 @@ namespace png {
     return (uint32_t(p[0]) << 24) | (uint32_t(p[1]) << 16) | (uint32_t(p[2]) << 8)  | uint32_t(p[3]);
   }
 
-  int decode(const char *source, Image &output) {
+  int decode(const std::string& source, Image &output) {
     std::array<uint8_t, 8> signature{ 137, 80, 78, 71, 13, 10, 26, 10 };
     uint32_t width     = 0;
     uint32_t height    = 0;
@@ -201,7 +201,7 @@ namespace png {
     WriteBE32(png, crc);
   }
 
-  int encode(Image img, std::vector<uint8_t> &output) {
+  int encode(const Image& img, std::vector<uint8_t> &output) {
     std::vector<uint8_t> data = img.data;
     uint32_t width = img.width;
     uint32_t height = img.height;

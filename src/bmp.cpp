@@ -37,7 +37,7 @@ uint32_t abgr_to_rgba(uint32_t x) {
 }
 
 namespace bmp {
-  int decode(const char *source, Image &output) {
+  int decode(const std::string& source, Image &output) {
     // Currently requires there to be one commandline argument (the filename)
     std::ifstream file(source, std::ios::binary);
     if (!file || !file.is_open()) {
@@ -102,7 +102,7 @@ namespace bmp {
     auto ptr = &data[offset];
 
     uint32_t abs_heigh = std::abs(height);
-    for (int y = 0; y < abs_heigh; ++y) {
+    for (uint32_t y = 0; y < abs_heigh; ++y) {
       int yy = (0 < height)
         ? (abs_heigh - y - 1)
         : y;

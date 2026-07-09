@@ -26,7 +26,7 @@ namespace qoi {
     char magic[4] = {'q', 'o', 'i', 'f'};
 
     // Magic does not match
-    for (int i = 0; i < sizeof magic; ++i) if (headers.data[i] != magic[i]) return -1;
+    for (size_t i = 0; i < sizeof magic; ++i) if (headers.data[i] != magic[i]) return -1;
     return 0;
   }
 
@@ -72,7 +72,7 @@ namespace qoi {
     uint32_t data;
   };
 
-  int decode(const char *source, Image &output) {
+  int decode(const std::string& source, Image &output) {
     // Currently requires there to be one commandline argument (the filename)
     std::ifstream file(source, std::ios::binary);
     if (!file || !file.is_open()) {
@@ -92,12 +92,12 @@ namespace qoi {
     }
 
     Headers headers = {};
-    for (int i = 0; i < sizeof headers.data; ++i) headers.data[i] = data[i];
+    for (size_t i = 0; i < sizeof headers.data; ++i) headers.data[i] = data[i];
     if (chech_header_validity(headers) != 0) { return -1; }
 
     ColorData colors[64] = {};
-    ColorData current_color = { .color = { .a = 255 }}; // Current color is defined to start with rgb of 0
-                                                         // and alpha of 1.
+    // Current color is defined to start with rgb of 0 and alpha of 1.
+    ColorData current_color = { .color = { .r = 0, .g = 0, .b = 0, .a = 255 } };
 
     output.height = be32toh(headers.structure.height);
     output.width = be32toh(headers.structure.width);
@@ -215,7 +215,7 @@ namespace qoi {
   //
   // - uint8_t* output = reinterpret_cast<uint8_t*>((uint32_t*)malloc(size));
   // ret: IF positive THEN length of output ELSE error value
-  int encode(Image img, std::vector<uint8_t> &output) {
+  int encode(const Image& img, std::vector<uint8_t> &output) {
     // Reserve worst case.
     // This step is mainly to avoid additional allocations.
     // The size comes from the maximum pixel encoding + header sizes.
@@ -240,12 +240,12 @@ namespace qoi {
     uint32_t offset = 14;
 
     std::array<ColorData, 64> colors = {};
-    ColorData previous_color = { .color = { .a = 255 }}; // Current color is defined to start with rgb of 0
-                                                         // and alpha of 1.
+    // Current color is defined to start with rgb of 0 and alpha of 1.
+    ColorData previous_color = { .color = { .r = 0, .g = 0, .b = 0, .a = 255 } };
 
     int run = 0;
     const ColorData* pixels = reinterpret_cast<const ColorData *>(data.data());
-    for (int i = 0; i < size; i++) {
+    for (uint32_t i = 0; i < size; i++) {
       ColorData pixel = pixels[i];
 
       if (pixel.data == previous_color.data) {

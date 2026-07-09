@@ -1,81 +1,44 @@
 #include <gtest/gtest.h>
 #include "../src/main.cpp"
 
-TEST(Main, FailOnInvalidArgumentLengts) {
-	{
-		const int ARGC = 4;
-		const char* ARGV[ARGC] = { "algolab", "png", "encode", "data/test.bmp" };
-
-		EXPECT_EQ(entry(ARGC, ARGV), -1);
-	};
-
-	{
-		const int ARGC = 3;
-		const char* ARGV[ARGC] = { "algolab", "png", "decode" };
-
-		EXPECT_EQ(entry(ARGC, ARGV), -1);
-	};
-}
-
-TEST(Main, FailOnInvalidTarget) {
-	const int ARGC = 5;
-	const char* ARGV[ARGC] = { "algolab", "jpg", "encode", "data/test.bmp", "out.jpg" };
-
-	EXPECT_EQ(entry(ARGC, ARGV), -1);
-}
-
 TEST(Main, FailOnInvalidFeature) {
-	const int ARGC = 5;
-	const char* ARGV[ARGC] = { "algolab", "png", "reconstruct", "data/test.bmp", "out.png" };
+	const int ARGC = 4;
+	char* ARGV[ARGC] = { "algolab", "--reconstruct", "data/test.bmp", "out" };
 
 	EXPECT_EQ(entry(ARGC, ARGV), -1);
 }
 
 TEST(BMP_decode, FailOnInvalidBMP) {
-	const int ARGC = 4;
-	const char* ARGV[ARGC] = { "algolab", "bmp", "decode", "data/fake.bmp" };
+	const int ARGC = 3;
+	char* ARGV[ARGC] = { "algolab", "--decode", "data/fake.bmp" };
 
 	EXPECT_EQ(entry(ARGC, ARGV), -1);
 }
 
 TEST(BMP_decode, SucceedOnValid1BPPBMP) {
-	const int ARGC = 5;
-	const char* ARGV[ARGC] = { "algolab", "bmp", "decode", "data/test.bmp", "out.png" };
+	const int ARGC = 4;
+	char* ARGV[ARGC] = { "algolab", "decode", "data/test.bmp", "out" };
 
 	EXPECT_EQ(entry(ARGC, ARGV), 0);
 }
 
 TEST(BMP_decode, SucceedOnValid24BPPBMP) {
-	const int ARGC = 5;
-	const char* ARGV[ARGC] = { "algolab", "bmp", "decode", "data/test3.bmp", "out.png" };
+	const int ARGC = 4;
+	char* ARGV[ARGC] = { "algolab", "decode", "data/test3.bmp", "out.png" };
 
 	EXPECT_EQ(entry(ARGC, ARGV), 0);
 }
 
-TEST(PNG_encode, SucceedOnValidFilePath) {
-	const int ARGC = 5;
-	const char* ARGV[ARGC] = { "algolab", "png", "encode", "data/test.bmp", "out.png" };
+TEST(encode, SucceedOnValidFilePath) {
+	const int ARGC = 4;
+	char* ARGV[ARGC] = { "algolab", "encode", "data/test.bmp", "out.png" };
 
 	EXPECT_EQ(entry(ARGC, ARGV), 0);
 }
 
-TEST(QOI_encode, SucceedOnValidFilePath) {
-	const int ARGC = 5;
-	const char* ARGV[ARGC] = { "algolab", "qoi", "encode", "data/test.bmp", "out.png" };
-
-	EXPECT_EQ(entry(ARGC, ARGV), 0);
-}
-
-TEST(PNG_encode, SucceedOnCubeBMP) {
-	const int ARGC = 5;
-	const char* ARGV[ARGC] = { "algolab", "png", "encode", "data/dice.bmp", "out.png" };
-
-	EXPECT_EQ(entry(ARGC, ARGV), 0);
-}
-
-TEST(QOI_encode, SucceedOnCubeBMP) {
-	const int ARGC = 5;
-	const char* ARGV[ARGC] = { "algolab", "qoi", "encode", "data/dice.bmp", "out.png" };
+TEST(encode, SucceedOnCubeBMP) {
+	const int ARGC = 4;
+	char* ARGV[ARGC] = { "algolab", "encode", "data/dice.bmp", "out.png" };
 
 	EXPECT_EQ(entry(ARGC, ARGV), 0);
 }
