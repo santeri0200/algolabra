@@ -24,7 +24,7 @@ int output_folder_exists(const std::string& output) {
   return static_cast<int>(exists && is_folder) - 1;
 }
 
-int read_options(int argc, char* argv[], Options &opts) {
+int read_options(int argc, char** argv, Options &opts) {
   if (argc < 2) {
     std::cerr << "No mode set! Try running the program with \"--help\" flag enabled.\n";
     return -1;
@@ -118,7 +118,7 @@ int decode(const std::string& input, Image &image) {
   return -1;
 }
 
-int entry(int argc, char* argv[]) {
+int entry(int argc, char** argv) {
   Options opts = {};
   opts.input = "";
   opts.output = "";
@@ -194,7 +194,7 @@ int entry(int argc, char* argv[]) {
 }
 
 #ifndef USE_GTEST_MAIN
-int main(int argc, char* argv[]) {
-  entry(argc, argv);
+int main(int argc, char** argv) {
+  return entry(argc, argv);
 }
 #endif
