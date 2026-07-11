@@ -7,72 +7,57 @@
 
 #include "image.cpp"
 
-namespace qoi {
-  #pragma pack(1)
-  struct QOIHeaders {
-    std::array<char, 4> magic;
-    uint32_t width;
-    uint32_t height;
-    uint8_t channels;
-    uint8_t colorspace;
-  };
+__inline__ int8_t cast_i2_to_i8(uint8_t x) {
+  return static_cast<int8_t>(x << 6) >> 6;
+}
 
-  union Headers {
-    QOIHeaders structure;
-    uint8_t data[14];
-  };
+__inline__ int8_t cast_i4_to_i8(uint8_t x) {
+  return static_cast<int8_t>(x << 4) >> 4;
+}
+
+__inline__ int8_t cast_i6_to_i8(uint8_t x) {
+  return static_cast<int8_t>(x << 2) >> 2;
+}
+
+#pragma pack(1)
+struct QOIHeaders {
+  std::array<char, 4> magic;
+  uint32_t width;
+  uint32_t height;
+  uint8_t channels;
+  uint8_t colorspace;
+};
+
+union Headers {
+  QOIHeaders structure;
+  std::array<uint8_t, 14> data;
+};
+
+struct Color {
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  uint8_t a;
+};
+
+union ColorData {
+  Color color;
+  uint32_t data;
+};
+
+__inline__ uint8_t get_position_index(Color color) {
+  return ((color.r * 3) + (color.g * 5) + (color.b * 7) + (color.a * 11)) % 64;
+}
+
+namespace qoi {
+  static constexpr std::array<uint8_t, 8> endPattern = {0, 0, 0, 0, 0, 0, 0, 1};
 
   __inline__ int chech_header_validity(Headers headers) {
-    char magic[4] = {'q', 'o', 'i', 'f'};
+    std::array<char, 4> magic = {'q', 'o', 'i', 'f'};
 
-    // Magic does not match
-    for (size_t i = 0; i < sizeof magic; ++i) { if (headers.data[i] != magic[i]) {
-      return -1;
-    }
-}
-    return 0;
+    bool equal = std::equal(std::begin(magic), std::end(magic), std::begin(headers.structure.magic));
+    return static_cast<int>(equal) - 1;
   }
-
-  __inline__ uint8_t get_position_index(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    return ((r * 3) + (g * 5) + (b * 7) + (a * 11)) % 64;
-  }
-
-  __inline__ int8_t cast_i2_to_i8(uint8_t x) { return (int8_t)(x << 6) >> 6; }
-
-  __inline__ int8_t cast_i8_to_i2(uint8_t x) {
-    int8_t y = x & 0b10000000;
-    int8_t z = x & 0b00000001;
-
-    return (y >> 6) | z;
-  }
-
-  __inline__ int8_t cast_i4_to_i8(uint8_t x) { return (int8_t)(x << 4) >> 4; }
-
-  __inline__ int8_t cast_i8_to_i4(uint8_t x) {
-    int8_t y = x & 0b10000000;
-    int8_t z = x & 0b00000111;
-
-    return (y >> 4) | z;
-  }
-
-  __inline__ int8_t cast_i6_to_i8(uint8_t x) { return (int8_t)(x << 2) >> 2; }
-
-  __inline__ int8_t cast_i8_to_i6(uint8_t x) {
-    int8_t y = x & 0b10000000;
-    int8_t z = x & 0b00011111;
-
-    return (y >> 2) | z;
-  }
-
-  union ColorData {
-    struct Color {
-      uint8_t r;
-      uint8_t g;
-      uint8_t b;
-      uint8_t a;
-    } color;
-    uint32_t data;
-  };
 
   int decode(const std::string& source, Image &output) {
     // Currently requires there to be one commandline argument (the filename)
@@ -110,28 +95,12 @@ namespace qoi {
     bool ended = false;
     uint32_t i = 14;
     while (i < data.size() - 7) {
-      uint8_t b0 = data[i + 0];
-      uint8_t b1 = data[i + 1];
-      uint8_t b2 = data[i + 2];
-      uint8_t b3 = data[i + 3];
-      uint8_t b4 = data[i + 4];
-      uint8_t b5 = data[i + 5];
-      uint8_t b6 = data[i + 6];
-      uint8_t b7 = data[i + 7];
-
-      if (
-        b0 == 0x0 &&
-        b1 == 0x0 &&
-        b2 == 0x0 &&
-        b3 == 0x0 &&
-        b4 == 0x0 &&
-        b5 == 0x0 &&
-        b6 == 0x0 &&
-        b7 == 0x1
-      ) {
+      if (std::equal(endPattern.begin(), endPattern.end(), data.begin() + i)) {
         ended = true;
         break;
-      };
+      }
+
+      uint8_t b0 = data[i];
 
       switch (b0) {
         case 0xFF: i++;
@@ -207,7 +176,7 @@ namespace qoi {
           break;
       }
 
-      colors[get_position_index(current_color.color.r, current_color.color.g, current_color.color.b, current_color.color.a)] = current_color;
+      colors[get_position_index(current_color.color)] = current_color;
     }
 
     file.close();
@@ -224,25 +193,28 @@ namespace qoi {
     // Reserve worst case.
     // This step is mainly to avoid additional allocations.
     // The size comes from the maximum pixel encoding + header sizes.
-    output.resize((img.height * img.width * 5) + 14 + 8);
+    output.reserve((img.height * img.width * 5) + 14 + 8);
 
     std::vector<uint8_t> data = img.data;
     uint32_t size = img.height * img.width;
 
-    QOIHeaders headers = {
-      .magic = {'q', 'o', 'i', 'f'},
-      .width = htobe32(img.width),
-      .height = htobe32(img.height),
-      .channels = 4,
-      .colorspace = 0,
-    };
-
-    Headers h = {};
-    h.structure = headers;
-
-    memcpy(output.data(), h.data, sizeof(headers));
-
-    uint32_t offset = 14;
+    // memcpy(output.data(), h.data.data(), h.data.size());
+    output.push_back(static_cast<uint8_t>('q'));
+    output.push_back(static_cast<uint8_t>('o'));
+    output.push_back(static_cast<uint8_t>('i'));
+    output.push_back(static_cast<uint8_t>('f'));
+    // uint32_t width = htobe32(img.width)
+    output.push_back(static_cast<uint8_t>((img.width >> 24) & 0xFF));
+    output.push_back(static_cast<uint8_t>((img.width >> 16) & 0xFF));
+    output.push_back(static_cast<uint8_t>((img.width >> 8) & 0xFF));
+    output.push_back(static_cast<uint8_t>((img.width >> 0) & 0xFF));
+    // uint32_t height = htobe32(img.height)
+    output.push_back(static_cast<uint8_t>((img.height >> 24) & 0xFF));
+    output.push_back(static_cast<uint8_t>((img.height >> 16) & 0xFF));
+    output.push_back(static_cast<uint8_t>((img.height >> 8) & 0xFF));
+    output.push_back(static_cast<uint8_t>((img.height >> 0) & 0xFF));
+    output.push_back(4); // channels
+    output.push_back(0); // colorspace
 
     std::array<ColorData, 64> colors = {};
     // Current color is defined to start with rgb of 0 and alpha of 1.
@@ -257,7 +229,7 @@ namespace qoi {
         run++;
         // QOI run encode is setup as `11xxxxxx`. If run is equal to 63 or 64, the byte overlaps with RGB or RGBA commands. Therefore it is limited to 62.
         if (run == 62 || i == size - 1) {
-            output[offset++] = 0xC0 | (run - 1);
+            output.push_back(0xC0 | (run - 1));
             run = 0;
         }
 
@@ -265,57 +237,50 @@ namespace qoi {
       }
 
       if (run > 0) {
-        output[offset++] = 0xC0 | (run - 1);
+        output.push_back(0xC0 | (run - 1));
         run = 0;
       }
 
-      int32_t dr = pixel.color.r - previous_color.color.r;
-      int32_t dg = pixel.color.g - previous_color.color.g;
-      int32_t db = pixel.color.b - previous_color.color.b;
-      int32_t da = pixel.color.a - previous_color.color.a;
+      int8_t dr = (int8_t)pixel.color.r - (int8_t)previous_color.color.r;
+      int8_t dg = (int8_t)pixel.color.g - (int8_t)previous_color.color.g;
+      int8_t db = (int8_t)pixel.color.b - (int8_t)previous_color.color.b;
+      int8_t da = (int8_t)pixel.color.a - (int8_t)previous_color.color.a;
 
       int32_t dr_dg = dr - dg;
       int32_t db_dg = db - dg;
 
-      uint8_t pos = get_position_index(pixel.color.r, pixel.color.g,
-                                      pixel.color.b, pixel.color.a);
+      uint8_t pos = get_position_index(pixel.color);
 
       if (colors[pos].data == pixel.data) {
-        output[offset++] = pos;
+        output.push_back(pos);
       } else if (-2 <= dr && dr <= 1 && -2 <= dg && dg <= 1 && -2 <= db &&
                 db <= 1 && da == 0) {
-        output[offset++] = 0x40 | dr << 4 | dg << 2 | db;
+        output.push_back(0x40 | (dr + 2) << 4 | (dg + 2) << 2 | (db + 2));
       } else if (-32 <= dg && dg <= 31 && -8 <= dr_dg && dr_dg <= 7 &&
                 -8 <= db_dg && db_dg <= 7 && da == 0) {
-        output[offset++] = 0x80 | dg;
-        output[offset++] = dr_dg << 4 | db_dg;
+        output.push_back(0x80 | (dg + 32));
+        output.push_back((dr_dg + 8) << 4 | (db_dg + 8));
       } else if (da == 0) {
-        output[offset++] = 0xFE;
-        output[offset++] = pixel.color.r;
-        output[offset++] = pixel.color.g;
-        output[offset++] = pixel.color.b;
+        output.push_back(0xFE);
+        output.push_back(pixel.color.r);
+        output.push_back(pixel.color.g);
+        output.push_back(pixel.color.b);
       } else {
-        output[offset++] = 0xFF;
-        output[offset++] = pixel.color.r;
-        output[offset++] = pixel.color.g;
-        output[offset++] = pixel.color.b;
-        output[offset++] = pixel.color.a;
+        output.push_back(0xFF);
+        output.push_back(pixel.color.r);
+        output.push_back(pixel.color.g);
+        output.push_back(pixel.color.b);
+        output.push_back(pixel.color.a);
       }
 
       previous_color = pixel;
       colors[pos] = pixel;
     }
-    
-    output[offset++] = 0;
-    output[offset++] = 0;
-    output[offset++] = 0;
-    output[offset++] = 0;
-    output[offset++] = 0;
-    output[offset++] = 0;
-    output[offset++] = 0;
-    output[offset++] = 1;
 
-    output.resize(offset);
+    for (auto b: endPattern) {
+      output.push_back(b);
+    }
+
     return 0;
   }
 }
