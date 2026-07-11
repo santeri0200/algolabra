@@ -18,8 +18,14 @@ namespace png {
       uint32_t pb = abs((int32_t)(p - b));
       uint32_t pc = abs((int32_t)(p - c));
 
-      if (pa <= pb && pa <= pc) return a;
-      if (pb <= pc) return b;
+      if (pa <= pb && pa <= pc) {
+        return a;
+      }
+
+      if (pb <= pc) {
+        return b;
+      }
+
       return c;
   }
 
@@ -60,12 +66,17 @@ namespace png {
       uint32_t length = ReadBE32(&data[pos]);
       pos += 4;
 
-      if (data.size() < pos + 4) return -1;
+      if (data.size() < pos + 4) {
+        return -1;
+      }
+
       uint32_t type = ReadBE32(&data[pos]);
       pos += 4;
 
       size_t chunkEnd = pos + length + 4;
-      if (data.size() < chunkEnd) return -1;
+      if (data.size() < chunkEnd) {
+        return -1;
+      }
 
       if (type == 0x49484452) {
         seenIHDR = true;
@@ -81,7 +92,10 @@ namespace png {
         if (colorType != 2 && colorType != 6) { return -1; }
       } else if (type == 0x49444154) {
         // IDAT
-        if (!seenIHDR) return -1;
+        if (!seenIHDR) {
+          return -1;
+        }
+
         idat.insert(
           idat.end(),
           data.begin() + pos,
@@ -89,7 +103,9 @@ namespace png {
         );
       } else if (type == 0x49454E44) {
         seenIEND = true;
-        if (length != 0) return -1;
+        if (length != 0) {
+          return -1;
+        }
 
         pos += length; // zero
         pos += 4;      // CRC
@@ -102,7 +118,9 @@ namespace png {
       pos += 4;
     }
 
-    if (!seenIEND || !seenIHDR) return -1;
+    if (!seenIEND || !seenIHDR) {
+      return -1;
+    }
 
     uint32_t channels = (colorType == 6) ? 4 : 3;
     uint32_t stride = width * channels;
@@ -114,20 +132,22 @@ namespace png {
     }
 
     size_t expectedSize = static_cast<size_t>(stride + 1) * height;
-    if (inflatedSize != expectedSize) return -2;
+    if (inflatedSize != expectedSize) {
+      return -2;
+    }
 
     std::vector<uint8_t> raw(height * stride);
     for (uint32_t y = 0; y < height; ++y) {
-      uint8_t* out = raw.data() + y * stride;
-      uint8_t* scan = inflatedData.data() + y * (stride + 1);
+      uint8_t* out = raw.data() + (y * stride);
+      uint8_t* scan = inflatedData.data() + (y * (stride + 1));
 
       uint8_t filter = scan[0];
       scan++;
 
       for (uint32_t x = 0; x < stride; ++x) {
         uint8_t left   = (channels <= x) ? out[x - channels] : 0;
-        uint8_t up     = (0 < y)         ? raw[(y - 1) * stride + x] : 0;
-        uint8_t upLeft = (channels <= x && 0 < y) ? raw[(y - 1) * stride + x - channels] : 0;
+        uint8_t up     = (0 < y)         ? raw[((y - 1) * stride) + x] : 0;
+        uint8_t upLeft = (channels <= x && 0 < y) ? raw[((y - 1) * stride) + x - channels] : 0;
 
         uint8_t v = scan[x];
         switch (filter) {
@@ -162,9 +182,9 @@ namespace png {
     } else {
       size_t j = 0;
       for (size_t i = 0; i < width * height; ++i) {
-        output.data[j++] = raw[i * 3 + 0];
-        output.data[j++] = raw[i * 3 + 1];
-        output.data[j++] = raw[i * 3 + 2];
+        output.data[j++] = raw[(i * 3) + 0];
+        output.data[j++] = raw[(i * 3) + 1];
+        output.data[j++] = raw[(i * 3) + 2];
         output.data[j++] = 255;
       }
     }
@@ -226,12 +246,12 @@ namespace png {
     }
 
     std::vector<uint8_t> filtered;
-    filtered.reserve(height * (width * 4 + 1)); {
+    filtered.reserve(height * ((width * 4) + 1)); {
       uint32_t stride = width * 4;
       for (uint32_t y = 0; y < height; ++y) {
         filtered.push_back(0);
 
-        const uint8_t* row = data.data() + y * stride;
+        const uint8_t* row = data.data() + (y * stride);
         filtered.insert(filtered.end(), row, row + stride);
       }
     }

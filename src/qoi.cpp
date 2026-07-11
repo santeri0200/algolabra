@@ -26,13 +26,15 @@ namespace qoi {
     char magic[4] = {'q', 'o', 'i', 'f'};
 
     // Magic does not match
-    for (size_t i = 0; i < sizeof magic; ++i) if (headers.data[i] != magic[i]) return -1;
+    for (size_t i = 0; i < sizeof magic; ++i) { if (headers.data[i] != magic[i]) {
+      return -1;
+    }
+}
     return 0;
   }
 
-  __inline__ uint8_t get_position_index(uint8_t r, uint8_t g, uint8_t b,
-                                        uint8_t a) {
-    return (r * 3 + g * 5 + b * 7 + a * 11) % 64;
+  __inline__ uint8_t get_position_index(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    return ((r * 3) + (g * 5) + (b * 7) + (a * 11)) % 64;
   }
 
   __inline__ int8_t cast_i2_to_i8(uint8_t x) { return (int8_t)(x << 6) >> 6; }
@@ -92,7 +94,10 @@ namespace qoi {
     }
 
     Headers headers = {};
-    for (size_t i = 0; i < sizeof headers.data; ++i) headers.data[i] = data[i];
+    for (size_t i = 0; i < sizeof headers.data; ++i) {
+      headers.data[i] = data[i];
+    }
+
     if (chech_header_validity(headers) != 0) { return -1; }
 
     ColorData colors[64] = {};
@@ -207,7 +212,7 @@ namespace qoi {
 
     file.close();
 
-    return -1 + (1 * ended);
+    return -1 + (1 * static_cast<int>(ended));
   }
 
   // The encoder currently accepts only well formatted 8-bit color data with the
@@ -219,7 +224,7 @@ namespace qoi {
     // Reserve worst case.
     // This step is mainly to avoid additional allocations.
     // The size comes from the maximum pixel encoding + header sizes.
-    output.resize(img.height * img.width * 5 + 14 + 8);
+    output.resize((img.height * img.width * 5) + 14 + 8);
 
     std::vector<uint8_t> data = img.data;
     uint32_t size = img.height * img.width;

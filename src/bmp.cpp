@@ -57,7 +57,7 @@ namespace bmp {
     }
 
     uint16_t identity = 0;
-    memcpy(&identity, &data[0], sizeof(identity));
+    memcpy(&identity, data.data(), sizeof(identity));
     if (identity != 0x4D42) {
       std::cerr << "Wrong identity\n";
       return -1;
@@ -96,10 +96,10 @@ namespace bmp {
     output.width = width;
     output.height = height;
 
-    uint32_t row_size = ((width * nbits + 31) & ~31) / 8; // Row size in bits, divided by input datatype width
+    uint32_t row_size = (((width * nbits) + 31) & ~31) / 8; // Row size in bits, divided by input datatype width
 
-    auto palette = reinterpret_cast<const uint32_t *>(&data[14 + dib_size]);
-    auto ptr = &data[offset];
+    const auto *palette = reinterpret_cast<const uint32_t *>(&data[14 + dib_size]);
+    auto *ptr = &data[offset];
 
     uint32_t abs_heigh = std::abs(height);
     for (uint32_t y = 0; y < abs_heigh; ++y) {
@@ -107,7 +107,7 @@ namespace bmp {
         ? (abs_heigh - y - 1)
         : y;
 
-      auto row = &ptr[yy * row_size];
+      auto *row = &ptr[yy * row_size];
       for (int x = 0; x < width; ++x) {
         if (nbits == 1) {
           uint32_t slot = x / 8;
@@ -132,9 +132,9 @@ namespace bmp {
           std::cerr << "Unsupported bit depth: 16\n";
           return -2;
         } else if (nbits == 24) {
-          uint32_t a = row[x * 3 + 0];
-          uint32_t b = row[x * 3 + 1];
-          uint32_t c = row[x * 3 + 2];
+          uint32_t a = row[(x * 3) + 0];
+          uint32_t b = row[(x * 3) + 1];
+          uint32_t c = row[(x * 3) + 2];
 
           uint32_t value = bgr_to_rgba((a << 16) | (b << 8) | c);
           output.data.push_back((value >> 24) & 0xFF);
@@ -142,10 +142,10 @@ namespace bmp {
           output.data.push_back((value >>  8) & 0xFF);
           output.data.push_back((value >>  0) & 0xFF);
         } else if (nbits == 32) {
-          uint32_t a = row[x * 4 + 0];
-          uint32_t b = row[x * 4 + 1];
-          uint32_t c = row[x * 4 + 2];
-          uint32_t d = row[x * 4 + 3];
+          uint32_t a = row[(x * 4) + 0];
+          uint32_t b = row[(x * 4) + 1];
+          uint32_t c = row[(x * 4) + 2];
+          uint32_t d = row[(x * 4) + 3];
 
           uint32_t value = abgr_to_rgba((a << 24) | (b << 16) | (c << 8) | d);
 

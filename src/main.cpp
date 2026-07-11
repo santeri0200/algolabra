@@ -57,7 +57,7 @@ int read_options(int argc, char** argv, Options &opts) {
   std::string input = argv[2];
   opts.input = input;
 
-  if (input == "") {
+  if (input.empty()) {
     std::cerr << "Invalid input file!\n";
     return -1;
   }
@@ -78,7 +78,7 @@ int read_options(int argc, char** argv, Options &opts) {
     std::string output = argv[3];
     opts.output = output;
 
-    if (output == "") {
+    if (output.empty()) {
       std::cerr << "Invalid output folder!\n";
       return -1;
     }
@@ -132,7 +132,7 @@ int entry(int argc, char** argv) {
     return -1;
   }
 
-  if (opts.output != "" && output_folder_exists(opts.output) != 0) {
+  if (!opts.output.empty() && output_folder_exists(opts.output) != 0) {
     std::cerr << opts.output << " does not exist or is not a directory!\n";
     return -1;
   }
@@ -177,7 +177,7 @@ int entry(int argc, char** argv) {
 
     std::cerr << "\nqoi output is the " << (float)qoiSize / (float)pngSize * 100.0 << "% size of png output.\n";
 
-    if (opts.output != "") {
+    if (!opts.output.empty()) {
       if (write_output(opts.output + "/out.qoi", qoiOutput) < 0) {
         std::cerr << "Failed to write " << opts.output + "/out.qoi" << "\n";
         return -1;
