@@ -170,10 +170,13 @@ int entry(int argc, char** argv) {
     size_t qoiSize = qoiOutput.size();
     size_t pngSize = pngOutput.size();
 
+    size_t pixelSize = (size_t)image.height * (size_t)image.width * 4;
+
     std::cerr << "width: " << image.width << ", height: " << image.width << ", pixels: " << image.data.size() / 4 << '\n';
-    std::cerr << "original size: " << originalSize << " bytes\n";
-    std::cerr << "qoi size: " << qoiSize << " bytes, compression ratio: " << (float)originalSize / (float)qoiSize << ":1\n";
-    std::cerr << "png size: " << pngSize << " bytes, compression ratio: " << (float)originalSize / (float)pngSize << ":1\n";
+    std::cerr << "raw size: " << pixelSize << " bytes\n";
+    std::cerr << "original size: " << originalSize << " bytes, compression ratio: " << (float)pixelSize / (float)originalSize << ":1\n";
+    std::cerr << "qoi size: " << qoiSize << " bytes, compression ratio: " << (float)pixelSize / (float)qoiSize << ":1\n";
+    std::cerr << "png size: " << pngSize << " bytes, compression ratio: " << (float)pixelSize / (float)pngSize << ":1\n";
 
     std::cerr << "\nqoi output is the " << (float)qoiSize / (float)pngSize * 100.0 << "% size of png output.\n";
 
