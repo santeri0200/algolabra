@@ -7,18 +7,6 @@
 
 #include "image.cpp"
 
-__inline__ int8_t cast_i2_to_i8(uint8_t x) {
-  return static_cast<int8_t>(x << 6) >> 6;
-}
-
-__inline__ int8_t cast_i4_to_i8(uint8_t x) {
-  return static_cast<int8_t>(x << 4) >> 4;
-}
-
-__inline__ int8_t cast_i6_to_i8(uint8_t x) {
-  return static_cast<int8_t>(x << 2) >> 2;
-}
-
 #pragma pack(1)
 struct QOIHeaders {
   std::array<char, 4> magic;
@@ -80,7 +68,7 @@ namespace qoi {
 
     Headers headers = {};
     for (size_t i = 0; i < sizeof headers.data; ++i) {
-      headers.data[i] = data[i];
+      headers.data[i] = data.at(i);
     }
 
     if (chech_header_validity(headers) != 0) { return -1; }
@@ -94,20 +82,15 @@ namespace qoi {
 
     bool ended = false;
     uint32_t i = 14;
-    while (i < data.size() - 7) {
-      if (std::equal(endPattern.begin(), endPattern.end(), data.begin() + i)) {
-        ended = true;
-        break;
-      }
+    while (i < data.size()) {
+      uint8_t firstByte = data.at(i);
 
-      uint8_t b0 = data[i];
-
-      switch (b0) {
+      switch (firstByte) {
         case 0xFF: i++;
-          current_color.color.r = data[i++];
-          current_color.color.g = data[i++];
-          current_color.color.b = data[i++];
-          current_color.color.a = data[i++];
+          current_color.color.r = data.at(i++);
+          current_color.color.g = data.at(i++);
+          current_color.color.b = data.at(i++);
+          current_color.color.a = data.at(i++);
 
           output.data.push_back(current_color.color.r);
           output.data.push_back(current_color.color.g);
@@ -115,9 +98,9 @@ namespace qoi {
           output.data.push_back(current_color.color.a);
           break;
         case 0xFE: i++;
-          current_color.color.r = data[i++];
-          current_color.color.g = data[i++];
-          current_color.color.b = data[i++];
+          current_color.color.r = data.at(i++);
+          current_color.color.g = data.at(i++);
+          current_color.color.b = data.at(i++);
 
           output.data.push_back(current_color.color.r);
           output.data.push_back(current_color.color.g);
@@ -125,7 +108,7 @@ namespace qoi {
           output.data.push_back(current_color.color.a);
           break;
         case 0xC0 ... 0xFD:
-          for (int r = 0; r < (b0 & 0x3F) + 1; ++r) {
+          for (int r = 0; r < (firstByte & 0x3F) + 1; ++r) {
             output.data.push_back(current_color.color.r);
             output.data.push_back(current_color.color.g);
             output.data.push_back(current_color.color.b);
@@ -135,7 +118,7 @@ namespace qoi {
           i++;
           break;
         case 0x00 ... 0x3F:
-          current_color = colors[data[i++] & 0b00111111];
+          current_color = colors[data.at(i++) & 0b00111111];
           output.data.push_back(current_color.color.r);
           output.data.push_back(current_color.color.g);
           output.data.push_back(current_color.color.b);
@@ -144,11 +127,11 @@ namespace qoi {
 
         case 0x40 ... 0x7F:
           current_color.color.r =
-              (uint8_t)(current_color.color.r + cast_i2_to_i8((data[i] & 0b00110000) >> 4));
+              (uint8_t)(current_color.color.r + ((data.at(i) & 0b00110000) >> 4) - 2);
           current_color.color.g =
-              (uint8_t)(current_color.color.g + cast_i2_to_i8((data[i] & 0b00001100) >> 2));
+              (uint8_t)(current_color.color.g + ((data.at(i) & 0b00001100) >> 2) - 2);
           current_color.color.b =
-              (uint8_t)(current_color.color.b + cast_i2_to_i8((data[i] & 0b00000011) >> 0));
+              (uint8_t)(current_color.color.b + ((data.at(i) & 0b00000011) >> 0) - 2);
 
           output.data.push_back(current_color.color.r);
           output.data.push_back(current_color.color.g);
@@ -157,16 +140,16 @@ namespace qoi {
           i++;
           break;
         case 0x80 ... 0xBF:
-          current_color.color.r = (uint8_t)(current_color.color.r + cast_i6_to_i8(data[i] & 0b00111111));
-          current_color.color.g = (uint8_t)(current_color.color.g + cast_i6_to_i8(data[i] & 0b00111111));
-          current_color.color.b = (uint8_t)(current_color.color.b + cast_i6_to_i8(data[i] & 0b00111111));
+          current_color.color.r = (uint8_t)(current_color.color.r + (data.at(i) & 0b00111111) - 32);
+          current_color.color.g = (uint8_t)(current_color.color.g + (data.at(i) & 0b00111111) - 32);
+          current_color.color.b = (uint8_t)(current_color.color.b + (data.at(i) & 0b00111111) - 32);
           i++;
 
           // Failed to read second LUMA byte
           current_color.color.r =
-              (uint8_t)(current_color.color.r - cast_i4_to_i8((data[i] & 0b11110000) >> 4));
+              (uint8_t)(current_color.color.r + ((data.at(i) & 0b11110000) >> 4) - 8);
           current_color.color.b =
-              (uint8_t)(current_color.color.b - cast_i4_to_i8((data[i] & 0b00001111) >> 0));
+              (uint8_t)(current_color.color.b + ((data.at(i) & 0b00001111) >> 0) - 8);
 
           output.data.push_back(current_color.color.r);
           output.data.push_back(current_color.color.g);
@@ -177,11 +160,15 @@ namespace qoi {
       }
 
       colors[get_position_index(current_color.color)] = current_color;
+      if (std::equal(endPattern.begin(), endPattern.end(), data.begin() + i)) {
+        ended = true;
+        break;
+      }
     }
 
     file.close();
 
-    return -1 + (1 * static_cast<int>(ended));
+    return static_cast<int>(ended) - 1;
   }
 
   // The encoder currently accepts only well formatted 8-bit color data with the
