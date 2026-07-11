@@ -26,11 +26,13 @@ struct Color {
   uint8_t g;
   uint8_t b;
   uint8_t a;
-};
 
-union ColorData {
-  Color color;
-  uint32_t data;
+  bool operator == (Color& other) const {
+    return r == other.r
+        && g == other.g
+        && b == other.b
+        && a == other.a;
+  }
 };
 
 __inline__ uint8_t get_position_index(Color color) {
@@ -73,9 +75,9 @@ namespace qoi {
 
     if (chech_header_validity(headers) != 0) { return -1; }
 
-    ColorData colors[64] = {};
+    std::array<Color, 64> colors = {};
     // Current color is defined to start with rgb of 0 and alpha of 1.
-    ColorData current_color = { .color = { .r = 0, .g = 0, .b = 0, .a = 255 } };
+    Color current_color = { .r = 0, .g = 0, .b = 0, .a = 255 };
 
     output.height = be32toh(headers.structure.height);
     output.width = be32toh(headers.structure.width);
@@ -87,79 +89,79 @@ namespace qoi {
 
       switch (firstByte) {
         case 0xFF: i++;
-          current_color.color.r = data.at(i++);
-          current_color.color.g = data.at(i++);
-          current_color.color.b = data.at(i++);
-          current_color.color.a = data.at(i++);
+          current_color.r = data.at(i++);
+          current_color.g = data.at(i++);
+          current_color.b = data.at(i++);
+          current_color.a = data.at(i++);
 
-          output.data.push_back(current_color.color.r);
-          output.data.push_back(current_color.color.g);
-          output.data.push_back(current_color.color.b);
-          output.data.push_back(current_color.color.a);
+          output.data.push_back(current_color.r);
+          output.data.push_back(current_color.g);
+          output.data.push_back(current_color.b);
+          output.data.push_back(current_color.a);
           break;
         case 0xFE: i++;
-          current_color.color.r = data.at(i++);
-          current_color.color.g = data.at(i++);
-          current_color.color.b = data.at(i++);
+          current_color.r = data.at(i++);
+          current_color.g = data.at(i++);
+          current_color.b = data.at(i++);
 
-          output.data.push_back(current_color.color.r);
-          output.data.push_back(current_color.color.g);
-          output.data.push_back(current_color.color.b);
-          output.data.push_back(current_color.color.a);
+          output.data.push_back(current_color.r);
+          output.data.push_back(current_color.g);
+          output.data.push_back(current_color.b);
+          output.data.push_back(current_color.a);
           break;
         case 0xC0 ... 0xFD:
           for (int r = 0; r < (firstByte & 0x3F) + 1; ++r) {
-            output.data.push_back(current_color.color.r);
-            output.data.push_back(current_color.color.g);
-            output.data.push_back(current_color.color.b);
-            output.data.push_back(current_color.color.a);
+            output.data.push_back(current_color.r);
+            output.data.push_back(current_color.g);
+            output.data.push_back(current_color.b);
+            output.data.push_back(current_color.a);
           }
 
           i++;
           break;
         case 0x00 ... 0x3F:
           current_color = colors[data.at(i++) & 0b00111111];
-          output.data.push_back(current_color.color.r);
-          output.data.push_back(current_color.color.g);
-          output.data.push_back(current_color.color.b);
-          output.data.push_back(current_color.color.a);
+          output.data.push_back(current_color.r);
+          output.data.push_back(current_color.g);
+          output.data.push_back(current_color.b);
+          output.data.push_back(current_color.a);
           break;
 
         case 0x40 ... 0x7F:
-          current_color.color.r =
-              (uint8_t)(current_color.color.r + ((data.at(i) & 0b00110000) >> 4) - 2);
-          current_color.color.g =
-              (uint8_t)(current_color.color.g + ((data.at(i) & 0b00001100) >> 2) - 2);
-          current_color.color.b =
-              (uint8_t)(current_color.color.b + ((data.at(i) & 0b00000011) >> 0) - 2);
+          current_color.r =
+              (uint8_t)(current_color.r + ((data.at(i) & 0b00110000) >> 4) - 2);
+          current_color.g =
+              (uint8_t)(current_color.g + ((data.at(i) & 0b00001100) >> 2) - 2);
+          current_color.b =
+              (uint8_t)(current_color.b + ((data.at(i) & 0b00000011) >> 0) - 2);
 
-          output.data.push_back(current_color.color.r);
-          output.data.push_back(current_color.color.g);
-          output.data.push_back(current_color.color.b);
-          output.data.push_back(current_color.color.a);
+          output.data.push_back(current_color.r);
+          output.data.push_back(current_color.g);
+          output.data.push_back(current_color.b);
+          output.data.push_back(current_color.a);
           i++;
           break;
         case 0x80 ... 0xBF:
-          current_color.color.r = (uint8_t)(current_color.color.r + (data.at(i) & 0b00111111) - 32);
-          current_color.color.g = (uint8_t)(current_color.color.g + (data.at(i) & 0b00111111) - 32);
-          current_color.color.b = (uint8_t)(current_color.color.b + (data.at(i) & 0b00111111) - 32);
+          current_color.r = (uint8_t)(current_color.r + (data.at(i) & 0b00111111) - 32);
+          current_color.g = (uint8_t)(current_color.g + (data.at(i) & 0b00111111) - 32);
+          current_color.b = (uint8_t)(current_color.b + (data.at(i) & 0b00111111) - 32);
           i++;
 
           // Failed to read second LUMA byte
-          current_color.color.r =
-              (uint8_t)(current_color.color.r + ((data.at(i) & 0b11110000) >> 4) - 8);
-          current_color.color.b =
-              (uint8_t)(current_color.color.b + ((data.at(i) & 0b00001111) >> 0) - 8);
+          current_color.r =
+              (uint8_t)(current_color.r + ((data.at(i) & 0b11110000) >> 4) - 8);
+          current_color.b =
+              (uint8_t)(current_color.b + ((data.at(i) & 0b00001111) >> 0) - 8);
 
-          output.data.push_back(current_color.color.r);
-          output.data.push_back(current_color.color.g);
-          output.data.push_back(current_color.color.b);
-          output.data.push_back(current_color.color.a);
+          output.data.push_back(current_color.r);
+          output.data.push_back(current_color.g);
+          output.data.push_back(current_color.b);
+          output.data.push_back(current_color.a);
           i++;
           break;
       }
 
-      colors[get_position_index(current_color.color)] = current_color;
+      colors[get_position_index(current_color)] = current_color;
       if (std::equal(endPattern.begin(), endPattern.end(), data.begin() + i)) {
         ended = true;
         break;
@@ -203,16 +205,16 @@ namespace qoi {
     output.push_back(4); // channels
     output.push_back(0); // colorspace
 
-    std::array<ColorData, 64> colors = {};
+    std::array<Color, 64> colors = {};
     // Current color is defined to start with rgb of 0 and alpha of 1.
-    ColorData previous_color = { .color = { .r = 0, .g = 0, .b = 0, .a = 255 } };
+    Color previous_color = { .r = 0, .g = 0, .b = 0, .a = 255 };
 
     int run = 0;
-    const ColorData* pixels = reinterpret_cast<const ColorData *>(data.data());
+    const Color* pixels = reinterpret_cast<const Color*>(data.data());
     for (uint32_t i = 0; i < size; i++) {
-      ColorData pixel = pixels[i];
+      Color pixel = pixels[i];
 
-      if (pixel.data == previous_color.data) {
+      if (pixel == previous_color) {
         run++;
         // QOI run encode is setup as `11xxxxxx`. If run is equal to 63 or 64, the byte overlaps with RGB or RGBA commands. Therefore it is limited to 62.
         if (run == 62 || i == size - 1) {
@@ -228,17 +230,17 @@ namespace qoi {
         run = 0;
       }
 
-      int8_t dr = (int8_t)pixel.color.r - (int8_t)previous_color.color.r;
-      int8_t dg = (int8_t)pixel.color.g - (int8_t)previous_color.color.g;
-      int8_t db = (int8_t)pixel.color.b - (int8_t)previous_color.color.b;
-      int8_t da = (int8_t)pixel.color.a - (int8_t)previous_color.color.a;
+      int8_t dr = (int8_t)pixel.r - (int8_t)previous_color.r;
+      int8_t dg = (int8_t)pixel.g - (int8_t)previous_color.g;
+      int8_t db = (int8_t)pixel.b - (int8_t)previous_color.b;
+      int8_t da = (int8_t)pixel.a - (int8_t)previous_color.a;
 
       int32_t dr_dg = dr - dg;
       int32_t db_dg = db - dg;
 
-      uint8_t pos = get_position_index(pixel.color);
+      uint8_t pos = get_position_index(pixel);
 
-      if (colors[pos].data == pixel.data) {
+      if (colors[pos] == pixel) {
         output.push_back(pos);
       } else if (-2 <= dr && dr <= 1 && -2 <= dg && dg <= 1 && -2 <= db &&
                 db <= 1 && da == 0) {
@@ -249,15 +251,15 @@ namespace qoi {
         output.push_back((dr_dg + 8) << 4 | (db_dg + 8));
       } else if (da == 0) {
         output.push_back(0xFE);
-        output.push_back(pixel.color.r);
-        output.push_back(pixel.color.g);
-        output.push_back(pixel.color.b);
+        output.push_back(pixel.r);
+        output.push_back(pixel.g);
+        output.push_back(pixel.b);
       } else {
         output.push_back(0xFF);
-        output.push_back(pixel.color.r);
-        output.push_back(pixel.color.g);
-        output.push_back(pixel.color.b);
-        output.push_back(pixel.color.a);
+        output.push_back(pixel.r);
+        output.push_back(pixel.g);
+        output.push_back(pixel.b);
+        output.push_back(pixel.a);
       }
 
       previous_color = pixel;
