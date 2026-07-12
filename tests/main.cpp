@@ -411,6 +411,27 @@ TEST(PNG, E2E) {
   }
 }
 
+TEST(Main, DECODE_BMP) {
+	const int ARGC = 3;
+	char* ARGV[ARGC] = { "algolab", "--decode", "data/dice.bmp" };
+
+	EXPECT_EQ(entry(ARGC, ARGV), 0);
+}
+
+TEST(Main, DECODE_QOI) {
+	const int ARGC = 3;
+	char* ARGV[ARGC] = { "algolab", "--decode", "data/dice.qoi" };
+
+	EXPECT_EQ(entry(ARGC, ARGV), 0);
+}
+
+TEST(Main, DECODE_PNG) {
+	const int ARGC = 3;
+	char* ARGV[ARGC] = { "algolab", "--decode", "data/dice.png" };
+
+	EXPECT_EQ(entry(ARGC, ARGV), 0);
+}
+
 #ifdef USE_GTEST_MAIN
 int main(int argc, char** argv) {
 	testing::InitGoogleTest(&argc, argv);
