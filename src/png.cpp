@@ -9,6 +9,7 @@
 #include <zlib.h>
 
 #include "image.cpp"
+#include "deflate.cpp"
 
 static uint32_t Paeth(uint32_t a, uint32_t b, uint32_t c) {
     uint32_t p = a + b - c;
@@ -25,17 +26,6 @@ static uint32_t Paeth(uint32_t a, uint32_t b, uint32_t c) {
     }
 
     return c;
-}
-
-uint32_t ReadBE32(const uint8_t* p) {
-  return (uint32_t(p[0]) << 24) | (uint32_t(p[1]) << 16) | (uint32_t(p[2]) << 8)  | uint32_t(p[3]);
-}
-
-__inline__ void WriteBE32(std::vector<uint8_t>& out, uint32_t x) {
-  out.push_back((x >> 24) & 0xFF);
-  out.push_back((x >> 16) & 0xFF);
-  out.push_back((x >>  8) & 0xFF);
-  out.push_back((x >>  0) & 0xFF);
 }
 
 void pushChunk(
@@ -151,12 +141,14 @@ namespace png {
 
     uint32_t channels = (colorType == 6) ? 4 : 3;
     uint32_t stride = width * channels;
-    uLongf inflatedSize = (uLongf)(stride + 1ULL) * height;
+    std::vector<uint8_t> inflatedData;
 
-    std::vector<uint8_t> inflatedData(inflatedSize);
-    if (uncompress(inflatedData.data(), &inflatedSize, idat.data(), idat.size()) != Z_OK) {
-      return -1337;
+    if (InflateStored(idat.data(), idat.size(), inflatedData) != 0) {
+        return -1337;
     }
+
+    size_t inflatedSize = inflatedData.size();
+
 
     size_t expectedSize = static_cast<size_t>(stride + 1) * height;
     if (inflatedSize != expectedSize) {
@@ -253,23 +245,12 @@ namespace png {
       }
     }
 
-    uint64_t compressedSize = compressBound(filtered.size());
-    uLongf zDestLen = static_cast<uLongf>(compressedSize);
-    std::vector<uint8_t> compressed(compressedSize);
+    std::vector<uint8_t> compressed;
+    DeflateStored(
+        filtered.data(),
+        filtered.size(),
+        compressed);
 
-    int32_t rc = compress2(
-      compressed.data(),
-      &zDestLen,
-      filtered.data(),
-      filtered.size(),
-      Z_BEST_COMPRESSION
-    );
-
-    if (rc != Z_OK) {
-      return -1;
-    }
-
-    compressed.resize(compressedSize);
     pushChunk(output, "IDAT", compressed);
     pushChunk(output, "IEND", std::vector<uint8_t>{});
 
