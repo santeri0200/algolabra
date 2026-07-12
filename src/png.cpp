@@ -220,8 +220,9 @@ namespace png {
   }
 
   int encode(const Image& img, std::vector<uint8_t> &output) {
-    uint32_t width = img.width;
     uint32_t height = img.height;
+    uint32_t width = img.width;
+    uint32_t stride = width * 4;
 
     std::array<uint8_t, 8> signature{ 137, 80, 78, 71, 13, 10, 26, 10 };
 
@@ -243,10 +244,9 @@ namespace png {
     }
 
     std::vector<uint8_t> filtered;
-    filtered.reserve(height * ((width * 4) + 1)); {
-      uint32_t stride = width * 4;
+    filtered.reserve(height * (stride + 1)); {
       for (uint32_t y = 0; y < height; ++y) {
-        filtered.push_back(0);
+        filtered.push_back(0); // Filter type 
 
         const uint8_t* row = img.data.data() + (y * stride);
         filtered.insert(filtered.end(), row, row + stride);
