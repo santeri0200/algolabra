@@ -1,12 +1,12 @@
 #include <cstring>
-#include <string>
 #include <filesystem>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <string>
 
-#include "qoi.cpp"
-#include "png.cpp"
 #include "bmp.cpp"
+#include "png.cpp"
+#include "qoi.cpp"
 
 struct Options {
   std::string mode;
@@ -14,30 +14,34 @@ struct Options {
   std::string output;
 };
 
-int source_exists(const std::string& source) {
+int source_exists(const std::string &source) {
   return static_cast<int>(std::filesystem::exists(source)) - 1;
 }
 
-int output_folder_exists(const std::string& output) {
+int output_folder_exists(const std::string &output) {
   bool exists = std::filesystem::exists(output);
   bool is_folder = std::filesystem::is_directory(output);
 
   return static_cast<int>(exists && is_folder) - 1;
 }
 
-int read_options(int argc, char** argv, Options &opts) {
+int read_options(int argc, char **argv, Options &opts) {
   if (argc < 2) {
-    std::cerr << "No mode set! Try running the program with \"--help\" flag enabled.\n";
+    std::cerr << "No mode set! Try running the program with \"--help\" flag "
+                 "enabled.\n";
     return -1;
   }
 
   std::string mode = argv[1];
   if (mode == "--help") {
-    std::cerr << "Program usage:\n"
-              << "\tmain [MODE] [INPUT] [OUTPUT]\n\n"
-              << "\tValid [MODE]s are \"--encode\" and \"--decode\" instead. (Only one mode is allowed at a time!)\n"
-              << "\t[INPUT] should be a BMP, PNG or QOI file, marked by the standard file extension.\n"
-              << "\t[OUTPUT] should be a folder the encoded file is stored in at.\n";
+    std::cerr
+        << "Program usage:\n"
+        << "\tmain [MODE] [INPUT] [OUTPUT]\n\n"
+        << "\tValid [MODE]s are \"--encode\" and \"--decode\" instead. (Only "
+           "one mode is allowed at a time!)\n"
+        << "\t[INPUT] should be a BMP, PNG or QOI file, marked by the standard "
+           "file extension.\n"
+        << "\t[OUTPUT] should be a folder the encoded file is stored in at.\n";
     return 0;
   }
 
@@ -51,7 +55,8 @@ int read_options(int argc, char** argv, Options &opts) {
   }
 
   if (argc < 3) {
-    std::cerr << "No input set! Try running the program with \"--help\" flag enabled.\n";
+    std::cerr << "No input set! Try running the program with \"--help\" flag "
+                 "enabled.\n";
     return -1;
   }
 
@@ -63,14 +68,9 @@ int read_options(int argc, char** argv, Options &opts) {
     return -1;
   }
 
-  if (
-    input.size() < 4 ||
-    (
-      input.compare(input.size() - 4, 4, ".bmp") != 0 &&
-      input.compare(input.size() - 4, 4, ".qoi") != 0 &&
-      input.compare(input.size() - 4, 4, ".png") != 0
-    )
-  ) {
+  if (input.size() < 4 || (input.compare(input.size() - 4, 4, ".bmp") != 0 &&
+                           input.compare(input.size() - 4, 4, ".qoi") != 0 &&
+                           input.compare(input.size() - 4, 4, ".png") != 0)) {
     std::cerr << "Unsupported file extension!\n";
     return -1;
   }
@@ -89,20 +89,20 @@ int read_options(int argc, char** argv, Options &opts) {
 }
 
 int write_output(const std::string &output, std::vector<uint8_t> &data) {
-    std::ofstream outFile(output, std::ios::binary);
+  std::ofstream outFile(output, std::ios::binary);
 
-    if (!outFile.is_open()) {
-      std::cerr << "Failed to open " << output << "\n";
-      return -1;
-    }
+  if (!outFile.is_open()) {
+    std::cerr << "Failed to open " << output << "\n";
+    return -1;
+  }
 
-    outFile.write((const char *)data.data(), data.size());
-    outFile.close();
+  outFile.write((const char *)data.data(), data.size());
+  outFile.close();
 
-    return 0;
+  return 0;
 }
 
-int decode(const std::string& source, Image &image) {
+int decode(const std::string &source, Image &image) {
   std::ifstream file(source, std::ios::binary);
   if (!file || !file.is_open()) {
     std::cerr << "Error opening file!\n";
@@ -110,10 +110,8 @@ int decode(const std::string& source, Image &image) {
     return -1;
   }
 
-  std::vector<uint8_t> input(
-    (std::istreambuf_iterator<char>(file)),
-    std::istreambuf_iterator<char>()
-  );
+  std::vector<uint8_t> input((std::istreambuf_iterator<char>(file)),
+                             std::istreambuf_iterator<char>());
 
   if (source.compare(source.size() - 4, 4, ".bmp") == 0) {
     file.close();
@@ -134,7 +132,7 @@ int decode(const std::string& source, Image &image) {
   return -1;
 }
 
-int entry(int argc, char** argv) {
+int entry(int argc, char **argv) {
   Options opts = {};
   opts.input = "";
   opts.output = "";
@@ -174,13 +172,13 @@ int entry(int argc, char** argv) {
       return -1;
     }
 
-    std::vector<uint8_t>qoiOutput;
+    std::vector<uint8_t> qoiOutput;
     if (qoi::encode(image, qoiOutput) < 0) {
       std::cerr << "Failed to encode qoi!\n";
       return -1;
     }
 
-    std::vector<uint8_t>pngOutput;
+    std::vector<uint8_t> pngOutput;
     if (png::encode(image, pngOutput) < 0) {
       std::cerr << "Failed to encode png!\n";
       return -1;
@@ -192,13 +190,20 @@ int entry(int argc, char** argv) {
 
     size_t pixelSize = (size_t)image.height * (size_t)image.width * 4;
 
-    std::cerr << "width: " << image.width << ", height: " << image.width << ", pixels: " << image.data.size() / 4 << '\n';
+    std::cerr << "width: " << image.width << ", height: " << image.width
+              << ", pixels: " << image.data.size() / 4 << '\n';
     std::cerr << "raw size: " << pixelSize << " bytes\n";
-    std::cerr << "original size: " << originalSize << " bytes, compression ratio: " << (float)pixelSize / (float)originalSize << ":1\n";
-    std::cerr << "qoi size: " << qoiSize << " bytes, compression ratio: " << (float)pixelSize / (float)qoiSize << ":1\n";
-    std::cerr << "png size: " << pngSize << " bytes, compression ratio: " << (float)pixelSize / (float)pngSize << ":1\n";
+    std::cerr << "original size: " << originalSize
+              << " bytes, compression ratio: "
+              << (float)pixelSize / (float)originalSize << ":1\n";
+    std::cerr << "qoi size: " << qoiSize << " bytes, compression ratio: "
+              << (float)pixelSize / (float)qoiSize << ":1\n";
+    std::cerr << "png size: " << pngSize << " bytes, compression ratio: "
+              << (float)pixelSize / (float)pngSize << ":1\n";
 
-    std::cerr << "\nqoi output is the " << (float)qoiSize / (float)pngSize * 100.0 << "% size of png output.\n";
+    std::cerr << "\nqoi output is the "
+              << (float)qoiSize / (float)pngSize * 100.0
+              << "% size of png output.\n";
 
     if (!opts.output.empty()) {
       if (write_output(opts.output + "/out.qoi", qoiOutput) < 0) {
@@ -217,7 +222,5 @@ int entry(int argc, char** argv) {
 }
 
 #ifndef USE_GTEST_MAIN
-int main(int argc, char** argv) {
-  return entry(argc, argv);
-}
+int main(int argc, char **argv) { return entry(argc, argv); }
 #endif
