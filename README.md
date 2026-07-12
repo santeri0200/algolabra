@@ -1,13 +1,7 @@
 # Algolabra
 [![codecov](https://codecov.io/gh/santeri0200/algolabra/graph/badge.svg?token=D3VWSBDKM7)](https://codecov.io/gh/santeri0200/algolabra)
 
-## Documentation
-[Specification documentation](documentation/specification.md)
-[Implamentation documentation](documentation/implementation.md)
-[Testing documentation](documentation/testing.md)
-
-### Background
-The project is developed on and configured to run on University provided 64-bit Linux systems (unknown-linux-gnu). There is no guarantee that the project is able to run on either Windows or MacOS platforms.
+## User manual
 
 Other requirements:
 - GCC/G++
@@ -38,6 +32,14 @@ Encoded images are able to be output to a folder/directory.
 - Encode images with `out/main --encode %source% %target_dir%`
   - Where `%source%` is either `.bmp` or `.qoi` image
   - Where `%target_dir%` is a folder/directory which the output images will be emitted to
+
+## Documentation
+[Specification documentation](documentation/specification.md)
+[Implamentation documentation](documentation/implementation.md)
+[Testing documentation](documentation/testing.md)
+
+### Background
+The project is developed on and configured to run on University provided 64-bit Linux systems (unknown-linux-gnu). There is no guarantee that the project is able to run on either Windows or MacOS platforms.
 
 ### Weekly reports
 [Week 1](documentation/weekly_report_1.md)
