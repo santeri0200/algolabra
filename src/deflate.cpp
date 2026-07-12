@@ -54,7 +54,7 @@ void DeflateStored(const uint8_t* data, size_t size, std::vector<uint8_t>& out) 
             WriteLength(bw, tables, m.length);
             WriteDistance(bw, tables, m.distance);
 
-            for(int i = 0; i < m.length; i++)
+            for(int32_t i = 0; i < m.length; i++)
                 lz.Insert(data, pos + i, size);
 
             pos += m.length;
@@ -72,4 +72,63 @@ void DeflateStored(const uint8_t* data, size_t size, std::vector<uint8_t>& out) 
     bw.Flush();
 
     WriteBE32(out, Adler32(data,size));
+}
+
+int InflateStored(const std::vector<uint8_t>& data, std::vector<uint8_t>& out) {
+    if (data.size() < 6) {
+        return -1;
+    }
+
+    if (data[0] != 0x78) {
+        return -1;
+    }
+
+    BitReader br(data, 2); // start after zlib header
+
+    FixedTables tables = MakeFixedTables();
+
+    HuffmanDecoder litDec;
+    HuffmanDecoder distDec;
+
+    BuildDecoder(tables.lit, litDec);
+    BuildDecoder(tables.dist, distDec);
+
+    int32_t final = br.Read(1);
+    int32_t type = br.Read(2);
+
+    if (!final || type != 1) {
+        return -1;
+    }
+
+    while (true) {
+        int32_t sym = Decode(br, litDec);
+
+        if (sym < 256) {
+            out.push_back((uint8_t)sym);
+            continue;
+        }
+
+        if (sym == 256) {
+            break;
+        }
+
+        int32_t length = ReadLength(br, sym);
+        int32_t distSym = Decode(br, distDec);
+        int32_t distance = ReadDistance(br, distSym);
+
+        if (distance <= 0 || distance > static_cast<int>(out.size())) {
+            return -1;
+        }
+
+        size_t start = out.size() - distance;
+
+        for (int32_t i = 0; i < length; ++i) {
+            out.push_back(out[start + i]);
+        }
+    }
+
+    uint32_t stored = ReadBE32(&data[data.size() - 4]);
+    uint32_t actual = Adler32(out.data(), out.size());
+
+    return stored == actual ? 0 : -1;
 }
