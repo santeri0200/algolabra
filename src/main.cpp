@@ -36,7 +36,7 @@ int read_options(int argc, char** argv, Options &opts) {
     std::cerr << "Program usage:\n"
               << "\tmain [MODE] [INPUT] [OUTPUT]\n\n"
               << "\tValid [MODE]s are \"--encode\" and \"--decode\" instead. (Only one mode is allowed at a time!)\n"
-              << "\t[INPUT] should be a BMP file containing \"raw\" data.\n"
+              << "\t[INPUT] should be a BMP, PNG or QOI file, marked by the standard file extension.\n"
               << "\t[OUTPUT] should be a folder the encoded file is stored in at.\n";
     return 0;
   }
@@ -141,6 +141,10 @@ int entry(int argc, char** argv) {
 
   if (read_options(argc, argv, opts) < 0) {
     return -1;
+  }
+
+  if (opts.mode.empty()) {
+    return 0;
   }
 
   if (source_exists(opts.input) != 0) {

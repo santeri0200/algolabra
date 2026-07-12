@@ -411,6 +411,13 @@ TEST(PNG, E2E) {
   }
 }
 
+TEST(Main, HELP) {
+	const int ARGC = 2;
+	char* ARGV[ARGC] = { "algolab", "--help" };
+
+	EXPECT_EQ(entry(ARGC, ARGV), 0);
+}
+
 TEST(Main, DECODE_BMP) {
 	const int ARGC = 3;
 	char* ARGV[ARGC] = { "algolab", "--decode", "data/dice.bmp" };
