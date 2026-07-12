@@ -2,6 +2,7 @@
 #include <string>
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 
 #include "qoi.cpp"
 #include "png.cpp"
