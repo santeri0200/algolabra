@@ -95,16 +95,6 @@ namespace qoi {
           output.data.push_back(current_color.b);
           output.data.push_back(current_color.a);
           break;
-        case 0xC0 ... 0xFD:
-          for (int r = 0; r < (firstByte & 0x3F) + 1; ++r) {
-            output.data.push_back(current_color.r);
-            output.data.push_back(current_color.g);
-            output.data.push_back(current_color.b);
-            output.data.push_back(current_color.a);
-          }
-
-          i++;
-          break;
         case 0x00 ... 0x3F:
           current_color = colors[input.at(i++) & 0b00111111];
           output.data.push_back(current_color.r);
@@ -112,7 +102,6 @@ namespace qoi {
           output.data.push_back(current_color.b);
           output.data.push_back(current_color.a);
           break;
-
         case 0x40 ... 0x7F:
           current_color.r =
               (uint8_t)(current_color.r + ((input.at(i) & 0b00110000) >> 4) - 2);
@@ -143,6 +132,16 @@ namespace qoi {
           output.data.push_back(current_color.g);
           output.data.push_back(current_color.b);
           output.data.push_back(current_color.a);
+          i++;
+          break;
+        case 0xC0 ... 0xFD:
+          for (int r = 0; r < (firstByte & 0x3F) + 1; ++r) {
+            output.data.push_back(current_color.r);
+            output.data.push_back(current_color.g);
+            output.data.push_back(current_color.b);
+            output.data.push_back(current_color.a);
+          }
+
           i++;
           break;
       }
