@@ -66,8 +66,7 @@ int read_options(int argc, char** argv, Options &opts) {
     input.size() < 4 ||
     (
       input.compare(input.size() - 4, 4, ".bmp") != 0 &&
-      input.compare(input.size() - 4, 4, ".qoi") != 0 &&
-      input.compare(input.size() - 4, 4, ".png") != 0
+      input.compare(input.size() - 4, 4, ".qoi") != 0
     )
   ) {
     std::cerr << "Unsupported file extension!\n";
@@ -108,10 +107,6 @@ int decode(const std::string& input, Image &image) {
 
   if (input.compare(input.size() - 4, 4, ".qoi") == 0) {
     return qoi::decode(input, image);
-  }
-
-  if (input.compare(input.size() - 4, 4, ".png") == 0) {
-    return png::decode(input, image);
   }
 
   std::cerr << "Unsupported file extension!\n";
