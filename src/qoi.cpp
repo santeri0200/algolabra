@@ -6,6 +6,71 @@
 
 #include "image.cpp"
 
+// RGBA bytes are ordered; tag, red, green, blue and alpha.
+// 
+// +-RGBA--------------------------+--------+--------+--------+--------+
+// | 7   6   5   4   3   2   1   0 | 7 .. 0 | 7 .. 0 | 7 .. 0 | 7 .. 0 |
+// |-------------------------------+--------+--------+--------+--------+
+// | 1   1   1   1   1   1   1   1 |  red   | green  |  blue  | alpha  |
+// +-------------------------------+--------+--------+--------+--------+
+// 
+// ===
+// 
+// RGB bytes are ordered; tag, red, green and blue.
+// 
+// +-RGB---------------------------+--------+--------+--------+
+// | 7   6   5   4   3   2   1   0 | 7 .. 0 | 7 .. 0 | 7 .. 0 |
+// |-------------------------------+--------+--------+--------+
+// | 1   1   1   1   1   1   1   1 |  red   | green  |  blue  |
+// +-------------------------------+--------+--------+--------+
+// 
+// ===
+// 
+// INDEX includes 2-bit tag and 6-bit index into the ColorData array for already seen colors.
+// 
+// +-INDEX-------------------------+
+// | 7   6   5   4   3   2   1   0 |
+// |-------------------------------+
+// | 0   0 |         index         |
+// +-------------------------------+
+//
+// ===
+//
+// DIFF includes 2-bit tag and 3x 2-bit wrapping differences to the last color.
+// The differences have a bias of 2.
+// 
+// +-DIFF--------------------------+
+// | 7   6   5   4   3   2   1   0 |
+// |-------------------------------+
+// | 0   1 |  dr   |  dg   |  db   |
+// +-------------------------------+
+// 
+// ===
+// 
+// LUMA includes 2-bit tag, 6-bit wrapping difference for green and 4-bit wrapping differences for red and blue from green's difference from the last color.
+// Green channel has a bias of 32, and red and blue have a bias of 8.
+// 
+// +-LUMA--------------------------+-------------------------------+
+// | 7   6   5   4   3   2   1   0 | 7   6   5   4   3   2   1   0 |  
+// |-------------------------------+-------------------------------+
+// | 0   1 |       diff green      |    dr - dg    |    db - dg    |
+// +-------------------------------+-------------------------------+
+// 
+// ===
+// 
+// RUN includes 2-bit tag and 6-bit run length with a bias of 1.
+// The run length is limited to 62 as otherwise the byte structure would,
+//   construct a RGB or RGBA tag.
+// 
+// +-RUN---------------------------+
+// | 7   6   5   4   3   2   1   0 |
+// |-------------------------------+
+// | 1   1 |          run          |
+// +-------------------------------+
+// 
+// ===
+// 
+
 #pragma pack(1)
 struct QOIHeaders {
   std::array<char, 4> magic;
