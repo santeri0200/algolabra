@@ -139,6 +139,7 @@ namespace qoi {
       uint8_t firstByte = input.at(i);
 
       switch (firstByte) {
+        /// RGBA
         case 0xFF: i++;
           current_color.r = input.at(i++);
           current_color.g = input.at(i++);
@@ -150,6 +151,7 @@ namespace qoi {
           output.data.push_back(current_color.b);
           output.data.push_back(current_color.a);
           break;
+        // RGB
         case 0xFE: i++;
           current_color.r = input.at(i++);
           current_color.g = input.at(i++);
@@ -160,6 +162,7 @@ namespace qoi {
           output.data.push_back(current_color.b);
           output.data.push_back(current_color.a);
           break;
+        // INDEX
         case 0x00 ... 0x3F:
           current_color = colors[input.at(i++) & 0b00111111];
           output.data.push_back(current_color.r);
@@ -167,6 +170,7 @@ namespace qoi {
           output.data.push_back(current_color.b);
           output.data.push_back(current_color.a);
           break;
+        // DIFF
         case 0x40 ... 0x7F:
           current_color.r =
               (uint8_t)(current_color.r + ((input.at(i) & 0b00110000) >> 4) - 2);
@@ -181,6 +185,7 @@ namespace qoi {
           output.data.push_back(current_color.a);
           i++;
           break;
+        // LUMA
         case 0x80 ... 0xBF:
           current_color.r = (uint8_t)(current_color.r + (input.at(i) & 0b00111111) - 32);
           current_color.g = (uint8_t)(current_color.g + (input.at(i) & 0b00111111) - 32);
@@ -199,6 +204,7 @@ namespace qoi {
           output.data.push_back(current_color.a);
           i++;
           break;
+        // RUN
         case 0xC0 ... 0xFD:
           for (int r = 0; r < (firstByte & 0x3F) + 1; ++r) {
             output.data.push_back(current_color.r);
@@ -285,20 +291,26 @@ namespace qoi {
       uint8_t pos = get_position_index(pixel);
 
       if (colors[pos] == pixel) {
+        // If the color is the same as the previous one, push the index.
+        // This works because the first two bits are always zero.
         output.push_back(pos);
       } else if (-2 <= dr && dr <= 1 && -2 <= dg && dg <= 1 && -2 <= db &&
                 db <= 1 && da == 0) {
+        // DIFF
         output.push_back(0x40 | (dr + 2) << 4 | (dg + 2) << 2 | (db + 2));
       } else if (-32 <= dg && dg <= 31 && -8 <= dr_dg && dr_dg <= 7 &&
                 -8 <= db_dg && db_dg <= 7 && da == 0) {
+        // LUMA
         output.push_back(0x80 | (dg + 32));
         output.push_back((dr_dg + 8) << 4 | (db_dg + 8));
       } else if (da == 0) {
+        // RGB
         output.push_back(0xFE);
         output.push_back(pixel.r);
         output.push_back(pixel.g);
         output.push_back(pixel.b);
       } else {
+        // RGBA
         output.push_back(0xFF);
         output.push_back(pixel.r);
         output.push_back(pixel.g);
