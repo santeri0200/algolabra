@@ -2,6 +2,22 @@
 #include <vector>
 #include "../src/main.cpp"
 
+TEST(BMP, TEST_IMAGE) {
+  const char* source = "data/test.bmp";
+  std::ifstream file(source, std::ios::binary);
+  EXPECT_TRUE(file.is_open());
+
+  std::vector<uint8_t>output;
+  std::vector<uint8_t>input(
+    (std::istreambuf_iterator<char>(file)),
+    std::istreambuf_iterator<char>()
+  );
+
+
+  Image input_image = {};
+	EXPECT_EQ(bmp::decode(input, input_image), 0);
+}
+
 TEST(QOI, get_position_index) {
 	Color a = { .r = 1, .g = 2, .b = 3, .a = 4 };
 	EXPECT_EQ(get_position_index(a), 0b00001110);
