@@ -176,22 +176,21 @@ namespace png {
         uint8_t up     = (0 < y)         ? raw[((y - 1) * stride) + x] : 0;
         uint8_t upLeft = (channels <= x && 0 < y) ? raw[((y - 1) * stride) + x - channels] : 0;
 
-        uint8_t v = scan[x];
+        out[x] = scan[x];
         switch (filter) {
           case 0:
-            out[x] = v;
             break;
           case 1:
-            out[x] = v + left;
+            out[x] += left;
             break;
           case 2:
-            out[x] = v + up;
+            out[x] += up;
             break;
           case 3:
-            out[x] = v + ((left + up) >> 1);
+            out[x] += (left + up) >> 1;
             break;
           case 4:
-            out[x] = v + Paeth(left, up, upLeft);
+            out[x] += Paeth(left, up, upLeft);
             break;
 
           default:
