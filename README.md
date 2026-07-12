@@ -25,6 +25,13 @@ If running on cubbli, you'll probably need to install the following:
   - `sh compile.sh`
 
 ### Running the project
+You are able to encode and decode images.
+Decoding images only indicates that the project supports the input file.
+Encoding images show stats based on the input image and resulting outputs.
+Encoded images are able to be output to a folder/directory.
+
+- Decode images with `out/main --decode %source%`
+  - Where `%source%` is either `.bmp` or `.qoi` image
 - Encode images with `out/main --encode %source%`
   - Where `%source%` is either `.bmp` or `.qoi` image
 - Encode images with `out/main --encode %source% %target_dir%`
