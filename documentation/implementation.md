@@ -13,20 +13,21 @@ Kerro myös mitä muita kieliä hallitset siinä määrin, että pystyt tarvitta
 - Rust, Zig, Python, Javascript/Typescript
 
 Mitä algoritmeja ja tietorakenteita toteutat työssäsi?
-- QOI (Quite Ok Image format) ja DEFLATE -algoritmit
+- QOI (Quite Ok Image format) ja PNG (Portable Network Graphics)
   - QOI on yksinkertainen kuvanpakkausalgoritmi, joka pakkaa kuvan pikselitasolla
-  - DEFLATE on yleinen kompressiotyökalu, joka voi käyttää LZ77 ja Huffman codingia
-    - DEFLATE toteutetaan ohjaajan suosituksesta
+  - PNG:ssä käytetään DEFLATE algoritmia, joka on yleinen kompressiotyökalu, joka voi käyttää LZ77 ja Huffman codingia
     - DEFLATE toteutetaan yksinkertaisen PNG pakkauksen ohessa
+    - DEFLATE toteutetaan ohjaajan suosituksesta
 
 Minkä ongelman ratkaiset?
-- Kuvanpakkausongleman, tai tarkemmin QOI tulisis olla kuvanpakkaustehokkuudeltaan parempi kuin yleinen pakkausalgoritmi
+- Kuvanpakkausongleman, tai tarkemmin QOI tulisis olla kuvanpakkaustehokkuudeltaan parempi kuin pikselidataa tallentavan PNG:n DEFLATE pakkausalgoritmi
 
 Mitä syötteitä ohjelma saa ja miten niitä käytetään?
-- Ohjelmalle syötetään kuva (demo käyttöön kuva on raaka pikselidataa)
+- Ohjelmalle syötetään kuva
+  - Vain yksinkertaistetut BMP tai v1.0 seuraavat PNG kuvat ovat tuotetuja
   - Molemmat vertailtavat pakkausalgoritmit pakkaavat kuvan omalla formaatillaan
-  - Pakatut kuvat puretaan takaisin pikselidataksi, jotta käyttäjä voi vertailla kuvia, nähdä kompressiosuhteen, sekä pakkaus-/purkunopeuden
-    - Kuvien uudelleen näyttämisen ideana on todeta algoritmien olevat häviöttömiä
+  - Pakatuista kuvista voidaan nähdä kompressiosuhteen
+    - Kuvia voidaan vertailla selaimessa
 
 Tavoitteena olevat aika- ja tilavaativuudet (esim. O-analyysit)
 - QOI:n aika- ja tilavaatimukset ovat `O(n)`
