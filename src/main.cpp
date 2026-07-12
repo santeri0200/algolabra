@@ -100,12 +100,26 @@ int write_output(const std::string &output, std::vector<uint8_t> &data) {
     return 0;
 }
 
-int decode(const std::string& input, Image &image) {
-  if (input.compare(input.size() - 4, 4, ".bmp") == 0) {
+int decode(const std::string& source, Image &image) {
+  std::ifstream file(source, std::ios::binary);
+  if (!file || !file.is_open()) {
+    std::cerr << "Error opening file!\n";
+
+    return -1;
+  }
+
+  std::vector<uint8_t> input(
+    (std::istreambuf_iterator<char>(file)),
+    std::istreambuf_iterator<char>()
+  );
+
+  if (source.compare(source.size() - 4, 4, ".bmp") == 0) {
+    file.close();
     return bmp::decode(input, image);
   }
 
-  if (input.compare(input.size() - 4, 4, ".qoi") == 0) {
+  if (source.compare(source.size() - 4, 4, ".qoi") == 0) {
+    file.close();
     return qoi::decode(input, image);
   }
 

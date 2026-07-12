@@ -37,27 +37,14 @@ uint32_t abgr_to_rgba(uint32_t x) {
 }
 
 namespace bmp {
-  int decode(const std::string& source, Image &output) {
-    // Currently requires there to be one commandline argument (the filename)
-    std::ifstream file(source, std::ios::binary);
-    if (!file || !file.is_open()) {
-      std::cerr << "Error opening file! \"" << source << "\"\n";
-
-      return -1;
-    }
-
-    std::vector<uint8_t> data(
-      (std::istreambuf_iterator<char>(file)),
-      std::istreambuf_iterator<char>()
-    );
-
-    if (data.size() < 14) {
+  int decode(const std::vector<uint8_t> &input, Image &output) {
+    if (input.size() < 14) {
       std::cerr << "No header\n";
       return -1;
     }
 
     uint16_t identity = 0;
-    memcpy(&identity, data.data(), sizeof(identity));
+    memcpy(&identity, input.data(), sizeof(identity));
     if (identity != 0x4D42) {
       std::cerr << "Wrong identity\n";
       return -1;
@@ -66,11 +53,11 @@ namespace bmp {
     uint32_t size = 0;
     uint32_t offset = 0;
 
-    memcpy(&size, &data[2], sizeof(size));
-    memcpy(&offset, &data[10], sizeof(offset));
+    memcpy(&size, &input[2], sizeof(size));
+    memcpy(&offset, &input[10], sizeof(offset));
 
     uint32_t dib_size = 0;
-    memcpy(&dib_size, &data[14], sizeof(dib_size));
+    memcpy(&dib_size, &input[14], sizeof(dib_size));
 
     uint32_t colortable_size = 0;
     uint32_t nbits = 0;
@@ -80,10 +67,10 @@ namespace bmp {
 
     switch (dib_size) {
       case 40:
-        memcpy(&width, &data[18], sizeof(width));
-        memcpy(&height, &data[22], sizeof(height));
-        memcpy(&colortable_size, &data[46], sizeof(colortable_size));
-        memcpy(&nbits, &data[28], sizeof(nbits));
+        memcpy(&width, &input[18], sizeof(width));
+        memcpy(&height, &input[22], sizeof(height));
+        memcpy(&colortable_size, &input[46], sizeof(colortable_size));
+        memcpy(&nbits, &input[28], sizeof(nbits));
         if (colortable_size == 0) {
           colortable_size = (uint32_t)1 << nbits;
         }
@@ -98,8 +85,8 @@ namespace bmp {
 
     uint32_t row_size = (((width * nbits) + 31) & ~31) / 8; // Row size in bits, divided by input datatype width
 
-    const auto *palette = reinterpret_cast<const uint32_t *>(&data[14 + dib_size]);
-    auto *ptr = &data[offset];
+    const auto *palette = reinterpret_cast<const uint32_t *>(&input[14 + dib_size]);
+    auto *ptr = &input[offset];
 
     uint32_t abs_heigh = std::abs(height);
     for (uint32_t y = 0; y < abs_heigh; ++y) {

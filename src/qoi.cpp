@@ -49,28 +49,15 @@ namespace qoi {
     return static_cast<int>(equal) - 1;
   }
 
-  int decode(const std::string& source, Image &output) {
-    // Currently requires there to be one commandline argument (the filename)
-    std::ifstream file(source, std::ios::binary);
-    if (!file || !file.is_open()) {
-      std::cerr << "Error opening file!\n";
-
-      return -1;
-    }
-
-    std::vector<uint8_t> data(
-      (std::istreambuf_iterator<char>(file)),
-      std::istreambuf_iterator<char>()
-    );
-
-    if (data.size() < 14) {
+  int decode(const std::vector<uint8_t> &input, Image &output) {
+    if (input.size() < 14) {
       std::cerr << "No header\n";
       return -1;
     }
 
     Headers headers = {};
     for (size_t i = 0; i < sizeof headers.data; ++i) {
-      headers.data[i] = data.at(i);
+      headers.data[i] = input.at(i);
     }
 
     if (chech_header_validity(headers) != 0) { return -1; }
@@ -84,15 +71,15 @@ namespace qoi {
 
     bool ended = false;
     uint32_t i = 14;
-    while (i < data.size()) {
-      uint8_t firstByte = data.at(i);
+    while (i < input.size()) {
+      uint8_t firstByte = input.at(i);
 
       switch (firstByte) {
         case 0xFF: i++;
-          current_color.r = data.at(i++);
-          current_color.g = data.at(i++);
-          current_color.b = data.at(i++);
-          current_color.a = data.at(i++);
+          current_color.r = input.at(i++);
+          current_color.g = input.at(i++);
+          current_color.b = input.at(i++);
+          current_color.a = input.at(i++);
 
           output.data.push_back(current_color.r);
           output.data.push_back(current_color.g);
@@ -100,9 +87,9 @@ namespace qoi {
           output.data.push_back(current_color.a);
           break;
         case 0xFE: i++;
-          current_color.r = data.at(i++);
-          current_color.g = data.at(i++);
-          current_color.b = data.at(i++);
+          current_color.r = input.at(i++);
+          current_color.g = input.at(i++);
+          current_color.b = input.at(i++);
 
           output.data.push_back(current_color.r);
           output.data.push_back(current_color.g);
@@ -120,7 +107,7 @@ namespace qoi {
           i++;
           break;
         case 0x00 ... 0x3F:
-          current_color = colors[data.at(i++) & 0b00111111];
+          current_color = colors[input.at(i++) & 0b00111111];
           output.data.push_back(current_color.r);
           output.data.push_back(current_color.g);
           output.data.push_back(current_color.b);
@@ -129,11 +116,11 @@ namespace qoi {
 
         case 0x40 ... 0x7F:
           current_color.r =
-              (uint8_t)(current_color.r + ((data.at(i) & 0b00110000) >> 4) - 2);
+              (uint8_t)(current_color.r + ((input.at(i) & 0b00110000) >> 4) - 2);
           current_color.g =
-              (uint8_t)(current_color.g + ((data.at(i) & 0b00001100) >> 2) - 2);
+              (uint8_t)(current_color.g + ((input.at(i) & 0b00001100) >> 2) - 2);
           current_color.b =
-              (uint8_t)(current_color.b + ((data.at(i) & 0b00000011) >> 0) - 2);
+              (uint8_t)(current_color.b + ((input.at(i) & 0b00000011) >> 0) - 2);
 
           output.data.push_back(current_color.r);
           output.data.push_back(current_color.g);
@@ -142,16 +129,16 @@ namespace qoi {
           i++;
           break;
         case 0x80 ... 0xBF:
-          current_color.r = (uint8_t)(current_color.r + (data.at(i) & 0b00111111) - 32);
-          current_color.g = (uint8_t)(current_color.g + (data.at(i) & 0b00111111) - 32);
-          current_color.b = (uint8_t)(current_color.b + (data.at(i) & 0b00111111) - 32);
+          current_color.r = (uint8_t)(current_color.r + (input.at(i) & 0b00111111) - 32);
+          current_color.g = (uint8_t)(current_color.g + (input.at(i) & 0b00111111) - 32);
+          current_color.b = (uint8_t)(current_color.b + (input.at(i) & 0b00111111) - 32);
           i++;
 
           // Failed to read second LUMA byte
           current_color.r =
-              (uint8_t)(current_color.r + ((data.at(i) & 0b11110000) >> 4) - 8);
+              (uint8_t)(current_color.r + ((input.at(i) & 0b11110000) >> 4) - 8);
           current_color.b =
-              (uint8_t)(current_color.b + ((data.at(i) & 0b00001111) >> 0) - 8);
+              (uint8_t)(current_color.b + ((input.at(i) & 0b00001111) >> 0) - 8);
 
           output.data.push_back(current_color.r);
           output.data.push_back(current_color.g);
@@ -162,13 +149,11 @@ namespace qoi {
       }
 
       colors[get_position_index(current_color)] = current_color;
-      if (std::equal(endPattern.begin(), endPattern.end(), data.begin() + i)) {
+      if (std::equal(endPattern.begin(), endPattern.end(), input.begin() + i)) {
         ended = true;
         break;
       }
     }
-
-    file.close();
 
     return static_cast<int>(ended) - 1;
   }
