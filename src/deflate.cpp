@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "deflate/primitives.cpp"
+
 __inline__ static uint32_t ReadBE32(const uint8_t* p) {
   return (uint32_t(p[0]) << 24) | (uint32_t(p[1]) << 16) | (uint32_t(p[2]) << 8)  | uint32_t(p[3]);
 }
@@ -35,107 +37,39 @@ void DeflateStored(const uint8_t* data, size_t size, std::vector<uint8_t>& out) 
     out.push_back(0x78);
     out.push_back(0x01); // fastest compression
 
-    // stored blocks
+    BitWriter bw(out);
+
+    // final fixed block
+    bw.Write(1, 1); // BFINAL
+    bw.Write(1, 2); // BTYPE=01
+
     size_t pos = 0;
-    while (pos < size) {
-        uint16_t len = (uint16_t)std::min<size_t>(65535, size - pos);
-        bool final = (pos + len == size);
+    LZ77 lz(size);
+    FixedTables tables = MakeFixedTables();
 
-        out.push_back(final ? 0x01 : 0x00); // BFINAL | BTYPE=00
+    while(pos < size) {
+        Match m = lz.Find(data, size, pos);
 
-        uint16_t nlen = ~len;
-        out.push_back(len & 0xff);
-        out.push_back(len >> 8);
+        if (m.length >= 3) {
+            WriteLength(bw, tables, m.length);
+            WriteDistance(bw, tables, m.distance);
 
-        out.push_back(nlen & 0xff);
-        out.push_back(nlen >> 8);
+            for(int i = 0; i < m.length; i++)
+                lz.Insert(data, pos + i, size);
 
-        out.insert(out.end(), data + pos, data + pos + len);
-        pos += len;
-    }
+            pos += m.length;
+        } else {
+            Emit(bw, tables.lit[data[pos]]);
+            lz.Insert(data, pos, size);
 
-    // Checksum
-    WriteBE32(out, Adler32(data, size));
-}
-
-int InflateStored(
-    const uint8_t* input,
-    size_t inputSize,
-    std::vector<uint8_t>& output)
-{
-    if (inputSize < 6) {
-        return -1;
-    }
-
-    // zlib header
-    uint8_t cmf = input[0];
-    uint8_t flg = input[1];
-
-    // DEFLATE
-    if ((cmf & 0x0F) != 8) {
-        return -1;
-    }      
-
-    if (((cmf << 8) | flg) % 31 != 0) {
-        return -1;
-    }
-
-    // preset dictionary unsupported
-    if (flg & 0x20) {
-        return -1;
-    }
-
-    size_t pos = 2;
-
-    // DEFLATE blocks
-    while (true) {
-        if (pos >= inputSize - 4) {
-            return -1;
-        }
-
-        uint8_t header = input[pos++];
-
-        bool final = header & 1;
-        uint8_t type = (header >> 1) & 3;
-
-        if (type != 0) {
-            return -2;      
-        }
-
-        if (pos + 4 > inputSize - 4) {
-            return -1;
-        }
-
-        uint16_t len = input[pos] | (input[pos + 1] << 8);
-        pos += 2;
-
-        uint16_t nlen = input[pos] | (input[pos + 1] << 8);
-        pos += 2;
-
-        if ((uint16_t)~len != nlen) {
-            return -1;
-        }
-
-        if (pos + len > inputSize - 4) {
-            return -1;
-        }
-
-        output.insert(output.end(), input + pos, input + pos + len);
-
-        pos += len;
-
-        if (final) {
-            break;
+            pos++;
         }
     }
 
-    // Checksum
-    uint32_t expected = ReadBE32(input + inputSize - 4);
-    uint32_t actual = Adler32(output.data(), output.size());
+    // end block
+    Emit(bw, tables.lit[256]);
 
-    if (actual != expected) {
-        return -3;
-    }
+    bw.Flush();
 
-    return 0;
+    WriteBE32(out, Adler32(data,size));
 }
