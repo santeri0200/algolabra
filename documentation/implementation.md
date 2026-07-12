@@ -34,3 +34,4 @@ List of the sources you have used, only those relevant to your work.
 - https://en.wikipedia.org/wiki/Deflate
 - https://www.rfc-editor.org/rfc/rfc1951
 - https://libpng.org/pub/png/spec/1.0/
+- ftp://ftp.uu.net/graphics/png/documents/zlib/zdoc-index.html
