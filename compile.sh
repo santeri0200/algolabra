@@ -1,1 +1,1 @@
-make main && out/main both compare data/dice.bmp
+make main && out/main --encode data/dice.bmp

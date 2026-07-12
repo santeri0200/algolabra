@@ -25,11 +25,11 @@ If running on cubbli, you'll probably need to install the following:
   - `sh compile.sh`
 
 ### Running the project
-- Run the comparison feature `out/main %target% compare input.bmp`
-  - Where `%target%` is either `qoi`, `png` or `both`
-- Encode BMP images to either PNG or QOI `out/main %target% encode input output`
-  - Where `%target%` is either `qoi` or `png`
-  - This feature allows inspection of the outputs
+- Encode images with `out/main --encode %source%`
+  - Where `%source%` is either `.bmp` or `.qoi` image
+- Encode images with `out/main --encode %source% %target_dir%`
+  - Where `%source%` is either `.bmp` or `.qoi` image
+  - Where `%target_dir%` is a folder/directory which the output images will be emitted to
 
 ### Weekly reports
 [Week 1](documentation/weekly_report_1.md)
