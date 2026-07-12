@@ -16,7 +16,7 @@ $(TEST_BIN): $(TESTS)
 	mkdir -p out
 	g++ $(CPPFLAGS) $(WARNINGS) $(TESTINGFLAGS) $(COVERAGEFLAGS) $^ $(GTEST_LIBS) -o $@
 
-test: $(TEST_BIN)
+test: clean $(TEST_BIN)
 	./$(TEST_BIN)
 
 coverage: clean
