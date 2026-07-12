@@ -6,33 +6,60 @@
 #include <array>
 #include <vector>
 #include <cstring>
+#include <zlib.h>
 
 #include "image.cpp"
 
-#include <zlib.h>
+static uint32_t Paeth(uint32_t a, uint32_t b, uint32_t c) {
+    uint32_t p = a + b - c;
+    uint32_t pa = abs((int32_t)(p - a));
+    uint32_t pb = abs((int32_t)(p - b));
+    uint32_t pc = abs((int32_t)(p - c));
+
+    if (pa <= pb && pa <= pc) {
+      return a;
+    }
+
+    if (pb <= pc) {
+      return b;
+    }
+
+    return c;
+}
+
+uint32_t ReadBE32(const uint8_t* p) {
+  return (uint32_t(p[0]) << 24) | (uint32_t(p[1]) << 16) | (uint32_t(p[2]) << 8)  | uint32_t(p[3]);
+}
+
+__inline__ void WriteBE32(std::vector<uint8_t>& out, uint32_t x) {
+  out.push_back((x >> 24) & 0xFF);
+  out.push_back((x >> 16) & 0xFF);
+  out.push_back((x >>  8) & 0xFF);
+  out.push_back((x >>  0) & 0xFF);
+}
+
+void pushChunk(
+  std::vector<uint8_t>& png,
+  const char type[4],
+  const std::vector<uint8_t>& data
+) {
+  WriteBE32(png, (uint32_t)data.size());
+
+  png.push_back(type[0]);
+  png.push_back(type[1]);
+  png.push_back(type[2]);
+  png.push_back(type[3]);
+
+  png.insert(png.end(), data.begin(), data.end());
+
+  uint32_t crc = crc32(0, nullptr, 0);
+  crc = crc32(crc, (const Bytef*)type, 4);
+  crc = crc32(crc, data.data(), data.size());
+
+  WriteBE32(png, crc);
+}
 
 namespace png {
-  static uint32_t Paeth(uint32_t a, uint32_t b, uint32_t c) {
-      uint32_t p = a + b - c;
-      uint32_t pa = abs((int32_t)(p - a));
-      uint32_t pb = abs((int32_t)(p - b));
-      uint32_t pc = abs((int32_t)(p - c));
-
-      if (pa <= pb && pa <= pc) {
-        return a;
-      }
-
-      if (pb <= pc) {
-        return b;
-      }
-
-      return c;
-  }
-
-  uint32_t ReadBE32(const uint8_t* p) {
-    return (uint32_t(p[0]) << 24) | (uint32_t(p[1]) << 16) | (uint32_t(p[2]) << 8)  | uint32_t(p[3]);
-  }
-
   int decode(const std::string& source, Image &output) {
     std::array<uint8_t, 8> signature{ 137, 80, 78, 71, 13, 10, 26, 10 };
     uint32_t width     = 0;
@@ -191,34 +218,6 @@ namespace png {
 
     // Raw is the rgba buffer, so it has to be cast to rgb if colorType is 2.
     return 0;
-  }
-
-  __inline__ void WriteBE32(std::vector<uint8_t>& out, uint32_t x) {
-    out.push_back((x >> 24) & 0xFF);
-    out.push_back((x >> 16) & 0xFF);
-    out.push_back((x >>  8) & 0xFF);
-    out.push_back((x >>  0) & 0xFF);
-  }
-
-  void pushChunk(
-    std::vector<uint8_t>& png,
-    const char type[4],
-    const std::vector<uint8_t>& data
-  ) {
-    WriteBE32(png, (uint32_t)data.size());
-
-    png.push_back(type[0]);
-    png.push_back(type[1]);
-    png.push_back(type[2]);
-    png.push_back(type[3]);
-
-    png.insert(png.end(), data.begin(), data.end());
-
-    uint32_t crc = crc32(0, nullptr, 0);
-    crc = crc32(crc, (const Bytef*)type, 4);
-    crc = crc32(crc, data.data(), data.size());
-
-    WriteBE32(png, crc);
   }
 
   int encode(const Image& img, std::vector<uint8_t> &output) {
