@@ -432,6 +432,24 @@ TEST(Main, DECODE_PNG) {
 	EXPECT_EQ(entry(ARGC, ARGV), 0);
 }
 
+TEST(Main, ENCODE) {
+	const int ARGC = 3;
+	char* ARGV[ARGC] = { "algolab", "--encode", "data/dice.bmp" };
+
+	EXPECT_EQ(entry(ARGC, ARGV), 0);
+	EXPECT_FALSE(std::filesystem::exists("out/out.png"));
+	EXPECT_FALSE(std::filesystem::exists("out/out.qoi"));
+}
+
+TEST(Main, ENCODE_WITH_OUTPUT) {
+	const int ARGC = 4;
+	char* ARGV[ARGC] = { "algolab", "--encode", "data/dice.bmp", "out" };
+
+	EXPECT_EQ(entry(ARGC, ARGV), 0);
+	EXPECT_TRUE(std::filesystem::exists("./out/out.png"));
+	EXPECT_TRUE(std::filesystem::exists("./out/out.qoi"));
+}
+
 #ifdef USE_GTEST_MAIN
 int main(int argc, char** argv) {
 	testing::InitGoogleTest(&argc, argv);
