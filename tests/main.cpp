@@ -384,6 +384,33 @@ TEST(DEFLATE, LZ77_Setup) {
 	EXPECT_EQ(lz.prev.at(size - 1), -1);
 }
 
+TEST(PNG, E2E) {
+  const char* source = "data/test.bmp";
+  std::ifstream file(source, std::ios::binary);
+  EXPECT_TRUE(file.is_open());
+
+  std::vector<uint8_t>output;
+  std::vector<uint8_t>input(
+    (std::istreambuf_iterator<char>(file)),
+    std::istreambuf_iterator<char>()
+  );
+
+
+  Image input_image = {};
+	EXPECT_EQ(bmp::decode(input, input_image), 0);
+	EXPECT_EQ(png::encode(input_image, output), 0);
+
+  Image output_image = {};
+  EXPECT_EQ(png::decode(output, output_image), 0);
+
+  EXPECT_EQ(input_image.height, output_image.height);
+  EXPECT_EQ(input_image.width, output_image.width);
+
+  for (int i = 0; i < input_image.data.size(); ++i) {
+  	EXPECT_EQ(input_image.data[i], output_image.data[i]);
+  }
+}
+
 #ifdef USE_GTEST_MAIN
 int main(int argc, char** argv) {
 	testing::InitGoogleTest(&argc, argv);
