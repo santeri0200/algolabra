@@ -175,9 +175,6 @@ namespace qoi {
 
   // The encoder currently accepts only well formatted 8-bit color data with the
   // alpha channel intact.
-  //
-  // - uint8_t* output = reinterpret_cast<uint8_t*>((uint32_t*)malloc(size));
-  // ret: IF positive THEN length of output ELSE error value
   int encode(const Image& img, std::vector<uint8_t> &output) {
     // Reserve worst case.
     // This step is mainly to avoid additional allocations.
