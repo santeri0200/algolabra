@@ -58,7 +58,7 @@ void DeflateStored(const uint8_t* data, size_t size, std::vector<uint8_t>& out) 
 
             pos += m.length;
         } else {
-            Emit(bw, tables.lit[data[pos]]);
+            Emit(bw, tables.literal[data[pos]]);
             lz.Insert(data, pos, size);
 
             pos++;
@@ -66,7 +66,7 @@ void DeflateStored(const uint8_t* data, size_t size, std::vector<uint8_t>& out) 
     }
 
     // end block
-    Emit(bw, tables.lit[256]);
+    Emit(bw, tables.literal[256]);
 
     bw.Flush();
 
@@ -89,8 +89,8 @@ int InflateStored(const std::vector<uint8_t>& data, std::vector<uint8_t>& out) {
     HuffmanDecoder litDec;
     HuffmanDecoder distDec;
 
-    BuildDecoder(tables.lit, litDec);
-    BuildDecoder(tables.dist, distDec);
+    BuildDecoder(tables.literal, litDec);
+    BuildDecoder(tables.distance, distDec);
 
     int32_t final = br.Read(1);
     int32_t type = br.Read(2);

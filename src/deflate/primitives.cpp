@@ -122,7 +122,8 @@ static void BuildHuffman(const std::vector<uint8_t>& lengths, std::vector<HuffCo
 }
 
 struct HuffmanDecoder {
-    std::array<HuffCode, 512> table; // 1 << 9
+    // 1 << 9 should cover all the huffman codes
+    std::array<HuffCode, 512> table;
 };
 
 static void BuildDecoder(const std::vector<HuffCode>& codes, HuffmanDecoder& dec) {
@@ -149,8 +150,8 @@ static void BuildDecoder(const std::vector<HuffCode>& codes, HuffmanDecoder& dec
 }
 
 struct FixedTables {
-    std::vector<HuffCode> lit;
-    std::vector<HuffCode> dist;
+    std::vector<HuffCode> literal;
+    std::vector<HuffCode> distance;
 };
 
 static FixedTables MakeFixedTables() {
@@ -162,10 +163,10 @@ static FixedTables MakeFixedTables() {
     for(int32_t i = 256; i <= 279; i++) literalLenghts[i] = 7;
     for(int32_t i = 280; i <= 287; i++) literalLenghts[i] = 8;
 
-    std::vector<uint8_t> dd(32,5);
+    std::vector<uint8_t> distanceLengths(32,5);
 
-    BuildHuffman(literalLenghts, tables.lit);
-    BuildHuffman(dd, tables.dist);
+    BuildHuffman(literalLenghts, tables.literal);
+    BuildHuffman(distanceLengths, tables.distance);
 
     return tables;
 }
@@ -288,7 +289,7 @@ void WriteLength(BitWriter& bw, const FixedTables& tables, int32_t length) {
         int32_t max = entry.base + ((1 << entry.extraBits) - 1);
         if (length >= entry.base && length <= max) {
             // Huffman symbol
-            Emit(bw, tables.lit[entry.symbol]);
+            Emit(bw, tables.literal[entry.symbol]);
 
             // extra length bits
             if (entry.extraBits) {
@@ -364,7 +365,7 @@ void WriteDistance(BitWriter& bw, const FixedTables& tables, int32_t distance) {
 
         if (entry.base <= distance && distance <= max) {
             // distance Huffman code
-            Emit(bw, tables.dist[entry.symbol]);
+            Emit(bw, tables.distance[entry.symbol]);
 
             // extra distance bits
             if (entry.extraBits) {
