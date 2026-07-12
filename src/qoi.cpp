@@ -176,13 +176,12 @@ namespace qoi {
   // The encoder currently accepts only well formatted 8-bit color data with the
   // alpha channel intact.
   int encode(const Image& img, std::vector<uint8_t> &output) {
+    uint32_t size = img.height * img.width;
+
     // Reserve worst case.
     // This step is mainly to avoid additional allocations.
     // The size comes from the maximum pixel encoding + header sizes.
-    output.reserve((img.height * img.width * 5) + 14 + 8);
-
-    std::vector<uint8_t> data = img.data;
-    uint32_t size = img.height * img.width;
+    output.reserve((size * 5) + 14 + 8);
 
     // memcpy(output.data(), h.data.data(), h.data.size());
     output.push_back(static_cast<uint8_t>('q'));
@@ -207,7 +206,7 @@ namespace qoi {
     Color previous_color = { .r = 0, .g = 0, .b = 0, .a = 255 };
 
     int run = 0;
-    const Color* pixels = reinterpret_cast<const Color*>(data.data());
+    const Color* pixels = reinterpret_cast<const Color*>(img.data.data());
     for (uint32_t i = 0; i < size; i++) {
       Color pixel = pixels[i];
 

@@ -221,7 +221,6 @@ namespace png {
   }
 
   int encode(const Image& img, std::vector<uint8_t> &output) {
-    std::vector<uint8_t> data = img.data;
     uint32_t width = img.width;
     uint32_t height = img.height;
 
@@ -250,7 +249,7 @@ namespace png {
       for (uint32_t y = 0; y < height; ++y) {
         filtered.push_back(0);
 
-        const uint8_t* row = data.data() + (y * stride);
+        const uint8_t* row = img.data.data() + (y * stride);
         filtered.insert(filtered.end(), row, row + stride);
       }
     }
