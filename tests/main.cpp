@@ -286,12 +286,32 @@ TEST(QOI, encode_RUN) {
 	}
 }
 
-// TEST(Main, FailOnInvalidFeature) {
-// 	const int ARGC = 4;
-// 	char* ARGV[ARGC] = { "algolab", "--reconstruct", "data/test.bmp", "out" };
+TEST(QOI, E2E) {
+  const char* source = "data/test.bmp";
+  std::ifstream file(source, std::ios::binary);
+  EXPECT_TRUE(file.is_open());
 
-// 	EXPECT_EQ(entry(ARGC, ARGV), -1);
-// }
+  std::vector<uint8_t>output;
+  std::vector<uint8_t>input(
+    (std::istreambuf_iterator<char>(file)),
+    std::istreambuf_iterator<char>()
+  );
+
+
+  Image input_image = {};
+	EXPECT_EQ(bmp::decode(input, input_image), 0);
+	EXPECT_EQ(qoi::encode(input_image, output), 0);
+
+  Image output_image = {};
+  EXPECT_EQ(qoi::decode(output, output_image), 0);
+
+  EXPECT_EQ(input_image.height, output_image.height);
+  EXPECT_EQ(input_image.width, output_image.width);
+
+  for (int i = 0; i < input_image.data.size(); ++i) {
+  	EXPECT_EQ(input_image.data[i], output_image.data[i]);
+  }
+}
 
 TEST(DEFLATE, BitWriter_Setup) {
 	std::vector<uint8_t> v = { 1, 2, 3, 4 };
