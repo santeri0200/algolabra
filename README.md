@@ -2,7 +2,7 @@
 [![codecov](https://codecov.io/gh/santeri0200/algolabra/graph/badge.svg?token=D3VWSBDKM7)](https://codecov.io/gh/santeri0200/algolabra)
 
 ## Documentation
-[Implementation documentation](documentation/implementation.md)
+[Specification documentation](documentation/specification.md)
 [Testing documentation](documentation/testing.md)
 
 ### Background
