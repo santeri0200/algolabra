@@ -27,6 +27,7 @@ coverage: clean
 
 clean:
 	rm -f out/main $(TEST_BIN)
+	rm -f out/out.png out/out.qoi
 	rm -f *.gcno *.gcda *.gcov
 	rm -f src/*.gcno src/*.gcda src/*.gcov
 	rm -f tests/*.gcno tests/*.gcda tests/*.gcov
