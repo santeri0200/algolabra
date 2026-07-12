@@ -45,3 +45,4 @@ Encoded images are able to be output to a folder/directory.
 [Week 4](documentation/weekly_report_4.md)
 [Week 5](documentation/weekly_report_5.md)
 [Week 6](documentation/weekly_report_6.md)
+[Final](documentation/final_report.md)
