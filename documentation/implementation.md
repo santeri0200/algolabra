@@ -17,6 +17,7 @@ Mitä algoritmeja ja tietorakenteita toteutat työssäsi?
   - QOI on yksinkertainen kuvanpakkausalgoritmi, joka pakkaa kuvan pikselitasolla
   - DEFLATE on yleinen kompressiotyökalu, joka voi käyttää LZ77 ja Huffman codingia
     - DEFLATE toteutetaan ohjaajan suosituksesta
+    - DEFLATE toteutetaan yksinkertaisen PNG pakkauksen ohessa
 
 Minkä ongelman ratkaiset?
 - Kuvanpakkausongleman, tai tarkemmin QOI tulisis olla kuvanpakkaustehokkuudeltaan parempi kuin yleinen pakkausalgoritmi
