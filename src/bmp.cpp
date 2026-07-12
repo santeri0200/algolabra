@@ -85,7 +85,7 @@ namespace bmp {
     uint32_t row_size = (((width * nbits) + 31) & ~31) / 8; // Row size in bits, divided by input datatype width
 
     const auto *palette = reinterpret_cast<const uint32_t *>(&input[14 + dib_size]);
-    auto *ptr = &input[offset];
+    const auto *ptr = &input[offset];
 
     uint32_t abs_heigh = std::abs(height);
     for (uint32_t y = 0; y < abs_heigh; ++y) {
@@ -93,7 +93,7 @@ namespace bmp {
         ? (abs_heigh - y - 1)
         : y;
 
-      auto *row = &ptr[yy * row_size];
+      const auto *row = &ptr[yy * row_size];
       for (int x = 0; x < width; ++x) {
         if (nbits == 1) {
           uint32_t slot = x / 8;

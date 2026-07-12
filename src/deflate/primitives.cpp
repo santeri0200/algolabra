@@ -3,7 +3,7 @@
 #include <array>
 
 __inline__ static uint32_t bitMask(int32_t n) {
-    return n == 32 ? 0xffffffffu : ((1u << n) - 1);
+    return n == 32 ? 0xffffffffU : ((1U << n) - 1);
 }
 
 struct BitWriter {
@@ -26,7 +26,7 @@ struct BitWriter {
     }
 
     void Flush() {
-        if (bits) {
+        if (bits != 0) {
             output.push_back(buffer & 0xff);
             buffer = 0;
             bits = 0;
@@ -41,7 +41,7 @@ struct BitReader {
     uint32_t buffer = 0;
     int32_t bits = 0;
 
-    BitReader(const std::vector<uint8_t>& d, size_t offset = 0) : data(d), pos(offset) {}
+    BitReader(const std::vector<uint8_t>& d, size_t offset = 0) : pos(offset), data(d) {}
 
     uint32_t Read(int32_t n) {
         while (bits < n) {
@@ -71,7 +71,7 @@ struct BitReader {
             bits += 8;
         }
 
-        return buffer & ((1u << n) - 1);
+        return buffer & bitMask(n);
     }
 
     void Drop(int32_t n) {
@@ -88,7 +88,7 @@ struct HuffCode {
 
 static uint16_t ReverseBits(uint16_t x, int32_t n) {
     uint16_t reversed = 0;
-    while (n--) {
+    while ((n--) != 0) {
         reversed = (reversed << 1) | (x & 1);
         x >>= 1;
     }
@@ -100,7 +100,10 @@ static void BuildHuffman(const std::vector<uint8_t>& lengths, std::vector<HuffCo
     int32_t code = 0;
     std::array<int32_t, 16> next = {};
     std::array<int32_t, 16> count = {};
-    for(uint8_t len: lengths) if (len) count[len]++;
+    for(uint8_t len: lengths) { if (len != 0u) {
+        count[len]++;
+    }
+}
 
     table.resize(lengths.size());
 
@@ -112,7 +115,7 @@ static void BuildHuffman(const std::vector<uint8_t>& lengths, std::vector<HuffCo
     for (size_t i = 0; i < lengths.size(); i++) {
         uint8_t len=lengths[i];
 
-        if (len) {
+        if (len != 0u) {
             table[i].bits = len;
             table[i].code = ReverseBits(next[len]++, len);
         } else {
@@ -134,7 +137,7 @@ static void BuildDecoder(const std::vector<HuffCode>& codes, HuffmanDecoder& dec
 
     for (size_t sym = 0; sym < codes.size(); sym++) {
         auto code = codes[sym];
-        if (!code.bits) {
+        if (code.bits == 0u) {
             continue;
         }
 
@@ -158,10 +161,18 @@ static FixedTables MakeFixedTables() {
     FixedTables tables;
     std::vector<uint8_t> literalLenghts(288);
 
-    for(int32_t i = 0; i <= 143; i++) literalLenghts[i] = 8;
-    for(int32_t i = 144; i <= 255; i++) literalLenghts[i] = 9;
-    for(int32_t i = 256; i <= 279; i++) literalLenghts[i] = 7;
-    for(int32_t i = 280; i <= 287; i++) literalLenghts[i] = 8;
+    for(int32_t i = 0; i <= 143; i++) {
+        literalLenghts[i] = 8;
+    }
+    for(int32_t i = 144; i <= 255; i++) {
+        literalLenghts[i] = 9;
+    }
+    for(int32_t i = 256; i <= 279; i++) {
+        literalLenghts[i] = 7;
+    }
+    for(int32_t i = 280; i <= 287; i++) {
+        literalLenghts[i] = 8;
+    }
 
     std::vector<uint8_t> distanceLengths(32,5);
 
@@ -191,8 +202,8 @@ struct LZ77 {
 
     LZ77(size_t size) : head(HASH, -1), prevMatch(size, -1) {}
 
-    uint32_t Hash(const uint8_t* p) {
-        return ((p[0] * 251u) ^ (p[1] * 911u) ^ (p[2] * 3571u)) & (HASH - 1);
+    static uint32_t Hash(const uint8_t* p) {
+        return ((p[0] * 251U) ^ (p[1] * 911U) ^ (p[2] * 3571U)) & (HASH - 1);
     }
 
     void Insert(const uint8_t* data, size_t pos, size_t size) {
@@ -292,7 +303,7 @@ void WriteLength(BitWriter& bw, const FixedTables& tables, int32_t length) {
             Emit(bw, tables.literal[entry.symbol]);
 
             // extra length bits
-            if (entry.extraBits) {
+            if (entry.extraBits != 0) {
                 bw.Write(length - entry.base, entry.extraBits);
             }
 
@@ -302,8 +313,8 @@ void WriteLength(BitWriter& bw, const FixedTables& tables, int32_t length) {
 }
 
 static int32_t ReadLength(BitReader& br, int32_t symbol) {
-    const auto& e = LengthTable[symbol - 257];
-    return e.base + (e.extraBits ? br.Read(e.extraBits) : 0);
+    const auto& entry = LengthTable[symbol - 257];
+    return entry.base + ((entry.extraBits != 0) ? br.Read(entry.extraBits) : 0);
 }
 
 struct DistanceCode {
@@ -368,7 +379,7 @@ void WriteDistance(BitWriter& bw, const FixedTables& tables, int32_t distance) {
             Emit(bw, tables.distance[entry.symbol]);
 
             // extra distance bits
-            if (entry.extraBits) {
+            if (entry.extraBits != 0) {
                 bw.Write(distance - entry.base, entry.extraBits);
             }
 
@@ -379,7 +390,7 @@ void WriteDistance(BitWriter& bw, const FixedTables& tables, int32_t distance) {
 
 static int32_t ReadDistance(BitReader& br, int32_t symbol) {
     const auto& entry = DistanceTable[symbol];
-    return entry.base + (entry.extraBits ? br.Read(entry.extraBits) : 0);
+    return entry.base + ((entry.extraBits != 0) ? br.Read(entry.extraBits) : 0);
 }
 
 static uint16_t Decode(BitReader& br, const HuffmanDecoder& dec) {

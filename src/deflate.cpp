@@ -53,8 +53,9 @@ void DeflateStored(const uint8_t* data, size_t size, std::vector<uint8_t>& out) 
             WriteLength(bw, tables, m.length);
             WriteDistance(bw, tables, m.distance);
 
-            for(int32_t i = 0; i < m.length; i++)
+            for(int32_t i = 0; i < m.length; i++) {
                 lz.Insert(data, pos + i, size);
+            }
 
             pos += m.length;
         } else {
@@ -86,8 +87,8 @@ int InflateStored(const std::vector<uint8_t>& data, std::vector<uint8_t>& out) {
 
     FixedTables tables = MakeFixedTables();
 
-    HuffmanDecoder litDec;
-    HuffmanDecoder distDec;
+    HuffmanDecoder litDec {};
+    HuffmanDecoder distDec {};
 
     BuildDecoder(tables.literal, litDec);
     BuildDecoder(tables.distance, distDec);
@@ -95,7 +96,7 @@ int InflateStored(const std::vector<uint8_t>& data, std::vector<uint8_t>& out) {
     int32_t final = br.Read(1);
     int32_t type = br.Read(2);
 
-    if (!final || type != 1) {
+    if ((final == 0) || type != 1) {
         return -1;
     }
 
