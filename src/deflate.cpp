@@ -33,9 +33,8 @@ static uint32_t Adler32(const uint8_t* data, size_t len) {
 }
 
 void DeflateStored(const uint8_t* data, size_t size, std::vector<uint8_t>& out) {
-    // zlib headers
-    out.push_back(0x78);
-    out.push_back(0x01); // fastest compression
+    out.push_back(0x78); // zlib headers
+    out.push_back(0x01); // Huffman fixed codes
 
     BitWriter bw(out);
 

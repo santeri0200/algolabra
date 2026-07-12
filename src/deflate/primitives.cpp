@@ -1,20 +1,25 @@
 #include <cstdint>
 #include <vector>
+#include <array>
+
+__inline__ static uint32_t bitMask(int32_t n) {
+    return n == 32 ? 0xffffffffu : ((1u << n) - 1);
+}
 
 struct BitWriter {
-    std::vector<uint8_t>& out;
+    std::vector<uint8_t>& output;
 
     uint32_t buffer = 0;
     int32_t bits = 0;
 
-    BitWriter(std::vector<uint8_t>& o) : out(o) {}
+    BitWriter(std::vector<uint8_t>& o) : output(o) {}
 
     void Write(uint32_t v, int32_t n) {
-        buffer |= (v & ((1u << n) - 1)) << bits;
+        buffer |= (v & bitMask(n)) << bits;
         bits += n;
 
         while (8 <= bits) {
-            out.push_back(buffer & 0xff);
+            output.push_back(buffer & 0xff);
             buffer >>= 8;
             bits -= 8;
         }
@@ -22,7 +27,7 @@ struct BitWriter {
 
     void Flush() {
         if (bits) {
-            out.push_back(buffer & 0xff);
+            output.push_back(buffer & 0xff);
             buffer = 0;
             bits = 0;
         }
@@ -31,24 +36,24 @@ struct BitWriter {
 
 struct BitReader {
     size_t pos = 0;
-    const std::vector<uint8_t>& out;
+    const std::vector<uint8_t>& data;
 
     uint32_t buffer = 0;
     int32_t bits = 0;
 
-    BitReader(const std::vector<uint8_t>& d, size_t offset = 0) : out(d), pos(offset) {}
+    BitReader(const std::vector<uint8_t>& d, size_t offset = 0) : data(d), pos(offset) {}
 
     uint32_t Read(int32_t n) {
         while (bits < n) {
-            if (pos >= out.size()) {
+            if (pos >= data.size()) {
                 return 0;
             }
 
-            buffer |= uint32_t(out[pos++]) << bits;
+            buffer |= uint32_t(data[pos++]) << bits;
             bits += 8;
         }
 
-        uint32_t value = buffer & ((1u << n) - 1);
+        uint32_t value = buffer & bitMask(n);
 
         buffer >>= n;
         bits -= n;
@@ -58,11 +63,11 @@ struct BitReader {
 
     uint32_t Peek(int32_t n) {
         while (bits < n) {
-            if (pos >= out.size()) {
+            if (pos >= data.size()) {
                 return 0;
             }
 
-            buffer |= uint32_t(out[pos++]) << bits;
+            buffer |= uint32_t(data[pos++]) << bits;
             bits += 8;
         }
 
@@ -82,20 +87,20 @@ struct HuffCode {
 
 
 static uint16_t ReverseBits(uint16_t x, int32_t n) {
-    uint16_t r = 0;
+    uint16_t reversed = 0;
     while (n--) {
-        r = (r << 1) | (x & 1);
+        reversed = (reversed << 1) | (x & 1);
         x >>= 1;
     }
 
-    return r;
+    return reversed;
 }
 
 static void BuildHuffman(const std::vector<uint8_t>& lengths, std::vector<HuffCode>& table) {
     int32_t code = 0;
-    int32_t next[16] = {};
-    int32_t count[16] = {};
-    for(uint8_t l: lengths) if (l) count[l]++;
+    std::array<int32_t, 16> next = {};
+    std::array<int32_t, 16> count = {};
+    for(uint8_t len: lengths) if (len) count[len]++;
 
     table.resize(lengths.size());
 
@@ -117,26 +122,28 @@ static void BuildHuffman(const std::vector<uint8_t>& lengths, std::vector<HuffCo
 }
 
 struct HuffmanDecoder {
-    HuffCode table[1 << 9];
+    std::array<HuffCode, 512> table; // 1 << 9
 };
 
 static void BuildDecoder(const std::vector<HuffCode>& codes, HuffmanDecoder& dec) {
-    for (auto& e : dec.table) {
-        e = {0xffff, 0};
+    // Mark entries as invalid
+    for (auto& entry : dec.table) {
+        entry = {0xffff, 0};
     }
 
     for (size_t sym = 0; sym < codes.size(); sym++) {
-        auto c = codes[sym];
-        if (!c.bits) {
+        auto code = codes[sym];
+        if (!code.bits) {
             continue;
         }
 
-        int32_t fill = 1 << (9 - c.bits);
+        int32_t fill = 1 << (9 - code.bits);
 
         for (int32_t i = 0; i < fill; i++) {
-            int32_t idx = c.code | (i << c.bits);
+            int32_t idx = code.code | (i << code.bits);
+
             dec.table[idx].code = (uint16_t)sym;
-            dec.table[idx].bits = c.bits;
+            dec.table[idx].bits = code.bits;
         }
     }
 }
@@ -147,20 +154,20 @@ struct FixedTables {
 };
 
 static FixedTables MakeFixedTables() {
-    FixedTables t;
-    std::vector<uint8_t> ll(288);
+    FixedTables tables;
+    std::vector<uint8_t> literalLenghts(288);
 
-    for(int32_t i = 0; i <= 143; i++) ll[i] = 8;
-    for(int32_t i = 144; i <= 255; i++) ll[i] = 9;
-    for(int32_t i = 256; i <= 279; i++) ll[i] = 7;
-    for(int32_t i = 280; i <= 287; i++) ll[i] = 8;
+    for(int32_t i = 0; i <= 143; i++) literalLenghts[i] = 8;
+    for(int32_t i = 144; i <= 255; i++) literalLenghts[i] = 9;
+    for(int32_t i = 256; i <= 279; i++) literalLenghts[i] = 7;
+    for(int32_t i = 280; i <= 287; i++) literalLenghts[i] = 8;
 
     std::vector<uint8_t> dd(32,5);
 
-    BuildHuffman(ll, t.lit);
-    BuildHuffman(dd, t.dist);
+    BuildHuffman(literalLenghts, tables.lit);
+    BuildHuffman(dd, tables.dist);
 
-    return t;
+    return tables;
 }
 
 static void Emit(BitWriter& bw, const HuffCode& c) {
@@ -172,14 +179,16 @@ struct Match {
     int32_t distance;
 };
 
+// PNG spec defines that compression method 0 (used in this project),
+//   should use LZ77 window size of not more than 32K.
 struct LZ77 {
     static constexpr int32_t WINDOW = 32768;
     static constexpr int32_t HASH = 1 << 15;
 
     std::vector<int> head;
-    std::vector<int> prev;
+    std::vector<int> prevMatch;
 
-    LZ77(size_t size) : head(HASH, -1), prev(size, -1) {}
+    LZ77(size_t size) : head(HASH, -1), prevMatch(size, -1) {}
 
     uint32_t Hash(const uint8_t* p) {
         return ((p[0] * 251u) ^ (p[1] * 911u) ^ (p[2] * 3571u)) & (HASH - 1);
@@ -192,7 +201,7 @@ struct LZ77 {
 
         uint32_t h = Hash(data + pos);
 
-        prev[pos] = head[h];
+        prevMatch[pos] = head[h];
         head[h] = (int)pos;
     }
 
@@ -205,18 +214,18 @@ struct LZ77 {
 
         uint32_t h = Hash(data + pos);
 
-        int32_t candidate = head[h];
+        int32_t matchPos = head[h];
         int32_t depth = 0;
 
-        while (0 <= candidate && depth++ < 128) {
-            size_t distance = pos - candidate;
+        while (0 <= matchPos && depth++ < 128) {
+            size_t distance = pos - matchPos;
 
             if (distance > WINDOW) {
                 break;
             }
 
             int32_t len = 0;
-            while (len < 258 && pos + len < size && data[candidate+len] == data[pos+len]) {
+            while (len < 258 && pos + len < size && data[matchPos+len] == data[pos+len]) {
                 len++;
             }
 
@@ -229,7 +238,7 @@ struct LZ77 {
                 }
             }
 
-            candidate = prev[candidate];
+            matchPos = prevMatch[matchPos];
         }
 
         return best;
@@ -275,15 +284,15 @@ static const std::vector<LengthCode> LengthTable = {
 };
 
 void WriteLength(BitWriter& bw, const FixedTables& tables, int32_t length) {
-    for(const auto& e : LengthTable) {
-        int32_t max = e.base + ((1 << e.extraBits) - 1);
-        if (length >= e.base && length <= max) {
+    for(const auto& entry : LengthTable) {
+        int32_t max = entry.base + ((1 << entry.extraBits) - 1);
+        if (length >= entry.base && length <= max) {
             // Huffman symbol
-            Emit(bw, tables.lit[e.symbol]);
+            Emit(bw, tables.lit[entry.symbol]);
 
             // extra length bits
-            if (e.extraBits) {
-                bw.Write(length - e.base, e.extraBits);
+            if (entry.extraBits) {
+                bw.Write(length - entry.base, entry.extraBits);
             }
 
             return;
@@ -350,16 +359,16 @@ static const std::vector<DistanceCode> DistanceTable = {
 };
 
 void WriteDistance(BitWriter& bw, const FixedTables& tables, int32_t distance) {
-    for(const auto& e : DistanceTable) {
-        int32_t max = e.base + ((1 << e.extraBits) - 1);
+    for(const auto& entry : DistanceTable) {
+        int32_t max = entry.base + ((1 << entry.extraBits) - 1);
 
-        if (e.base <= distance && distance <= max) {
+        if (entry.base <= distance && distance <= max) {
             // distance Huffman code
-            Emit(bw, tables.dist[e.symbol]);
+            Emit(bw, tables.dist[entry.symbol]);
 
             // extra distance bits
-            if (e.extraBits) {
-                bw.Write(distance - e.base, e.extraBits);
+            if (entry.extraBits) {
+                bw.Write(distance - entry.base, entry.extraBits);
             }
 
             return;
@@ -368,12 +377,12 @@ void WriteDistance(BitWriter& bw, const FixedTables& tables, int32_t distance) {
 }
 
 static int32_t ReadDistance(BitReader& br, int32_t symbol) {
-    const auto& e = DistanceTable[symbol];
-    return e.base + (e.extraBits ? br.Read(e.extraBits) : 0);
+    const auto& entry = DistanceTable[symbol];
+    return entry.base + (entry.extraBits ? br.Read(entry.extraBits) : 0);
 }
 
 static uint16_t Decode(BitReader& br, const HuffmanDecoder& dec) {
-    auto e = dec.table[br.Peek(9)];
-    br.Drop(e.bits);
-    return e.code;
+    auto entry = dec.table[br.Peek(9)];
+    br.Drop(entry.bits);
+    return entry.code;
 }

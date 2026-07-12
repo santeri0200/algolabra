@@ -317,7 +317,7 @@ TEST(DEFLATE, BitWriter_Setup) {
 	std::vector<uint8_t> v = { 1, 2, 3, 4 };
 	BitWriter bw(v);
 
-	EXPECT_EQ(bw.out, v);
+	EXPECT_EQ(bw.output, v);
 	EXPECT_EQ(bw.buffer, 0);
 	EXPECT_EQ(bw.bits, 0);
 }
@@ -327,38 +327,38 @@ TEST(DEFLATE, BitWrite_Methods) {
 	BitWriter bw(v);
 
 	bw.Write(0b11, 2);
-	EXPECT_EQ(bw.out.size(), 4);
+	EXPECT_EQ(bw.output.size(), 4);
 	EXPECT_EQ(bw.buffer, 3);
 	EXPECT_EQ(bw.bits, 2);
 
 	bw.Write(0b11, 2);
-	EXPECT_EQ(bw.out.size(), 4);
+	EXPECT_EQ(bw.output.size(), 4);
 	EXPECT_EQ(bw.buffer, 15);
 	EXPECT_EQ(bw.bits, 4);
 
 	bw.Write(0b11, 2);
-	EXPECT_EQ(bw.out.size(), 4);
+	EXPECT_EQ(bw.output.size(), 4);
 	EXPECT_EQ(bw.buffer, 63);
 	EXPECT_EQ(bw.bits, 6);
 
 	bw.Write(0b11, 2);
-	EXPECT_EQ(bw.out.size(), 5);
+	EXPECT_EQ(bw.output.size(), 5);
 	EXPECT_EQ(bw.buffer, 0);
 	EXPECT_EQ(bw.bits, 0);
 
-	EXPECT_EQ(bw.out.back(), 255);
+	EXPECT_EQ(bw.output.back(), 255);
 
 	bw.Write(0b11, 2);
-	EXPECT_EQ(bw.out.size(), 5);
+	EXPECT_EQ(bw.output.size(), 5);
 	EXPECT_EQ(bw.buffer, 3);
 	EXPECT_EQ(bw.bits, 2);
 
 	bw.Flush();
-	EXPECT_EQ(bw.out.size(), 6);
+	EXPECT_EQ(bw.output.size(), 6);
 	EXPECT_EQ(bw.buffer, 0);
 	EXPECT_EQ(bw.bits, 0);
 
-	EXPECT_EQ(bw.out.back(), 3);
+	EXPECT_EQ(bw.output.back(), 3);
 }
 
 TEST(DEFLATE, ReverseBits) {
@@ -379,9 +379,9 @@ TEST(DEFLATE, LZ77_Setup) {
 	EXPECT_EQ(lz.head.at(0), -1);
 	EXPECT_EQ(lz.head.at(lz.HASH - 1), -1);
 
-	EXPECT_EQ(lz.prev.size(), size);
-	EXPECT_EQ(lz.prev.at(0), -1);
-	EXPECT_EQ(lz.prev.at(size - 1), -1);
+	EXPECT_EQ(lz.prevMatch.size(), size);
+	EXPECT_EQ(lz.prevMatch.at(0), -1);
+	EXPECT_EQ(lz.prevMatch.at(size - 1), -1);
 }
 
 TEST(PNG, E2E) {
